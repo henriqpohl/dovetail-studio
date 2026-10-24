@@ -1,8 +1,56 @@
 # Dovetail Studio
 
-Dovetail Studio is the single WordPress plugin that loads and manages Dovetail modules. Modules are never standalone plugins.
+🌐 <a href="https://dovetail-consultancy.com">Dovetail Consultancy</a>
+
+![Release](https://img.shields.io/badge/release-2.2.0-gold)
+![WordPress](https://img.shields.io/badge/wordpress-%3E%3D6.2-21759b?logo=wordpress&logoColor=white)
+![PHP](https://img.shields.io/badge/php-%3E%3D8.0-777bb4?logo=php&logoColor=white)
+
+![Schema SEO](https://img.shields.io/badge/schema_seo-1.5.0-blue)
+![Schema SEO WooCommerce](https://img.shields.io/badge/schema_seo_woocommerce-1.2.0-blue)
+![Newsletter](https://img.shields.io/badge/newsletter-3.1.0-blue)
+![Virtual Assistant](https://img.shields.io/badge/virtual_assistant-1.31.1-blue)
+
+![Yoast SEO](https://img.shields.io/badge/yoast_seo-integrated-a4286a)
+![WooCommerce](https://img.shields.io/badge/woocommerce-integrated-96588a?logo=woocommerce&logoColor=white)
+
+Dovetail Studio is the single WordPress plugin that loads and manages Dovetail modules: structured data and technical SEO, WooCommerce merchant data, newsletter forms and an AI virtual assistant. Modules are never standalone plugins; each one can be enabled, disabled, updated or removed from **Dovetail Studio → Modules**.
+
+**Author:** <a href="https://dovetail-consultancy.com">Dovetail Consultancy</a>
+
+## Documentation
+
+### Plugin
+
+- [Guide](./USAGE.md)
+- [Changelog](./CHANGELOG.md)
+- [Core loader and SEO services](./src/Core/README.md)
+
+### Modules
+
+| Module | Version | Purpose | Docs |
+| --- | --- | --- | --- |
+| Schema SEO | 1.5.0 | Organization, WebSite, WebPage, Article and breadcrumb structured data; enriches Yoast SEO or builds a single standalone graph | [README](./modules/schema-seo/README.md) · [Usage](./modules/schema-seo/USAGE.md) |
+| Schema SEO WooCommerce | 1.2.0 | Product in the site graph, merchant data enrichment, WooCommerce breadcrumbs and technical SEO | [README](./modules/schema-seo-woocommerce/README.md) · [Usage](./modules/schema-seo-woocommerce/USAGE.md) |
+| Newsletter | 3.1.0 | Contact Form 7 and Mailchimp integration with encrypted credentials and double opt-in | [README](./modules/newsletter/README.md) · [Usage](./modules/newsletter/USAGE.md) |
+| Virtual Assistant | 1.31.1 | AI assistant with REST endpoints, knowledge base, enquiries, spam controls and front-end interface | [README](./modules/virtual-assistant/README.md) · [Usage](./modules/virtual-assistant/USAGE.md) |
+
+## Requirements
+
+- WordPress 6.2 or later and PHP 8.0 or later.
+- Optional integrations: Yoast SEO, WooCommerce, Contact Form 7 and Mailchimp, depending on the modules in use.
 
 ## Architecture
+
+```text
+dovetail-studio/
+├── dovetail-studio.php   # Plugin header and bootstrap
+├── src/Core/
+│   ├── Loader.php        # Module discovery, enabled state, admin UI, ZIP install/update/removal
+│   └── Seo/              # Environment detection and the single JSON-LD graph shared by schema modules
+├── assets/admin/         # Shared admin design system
+└── modules/<slug>/       # One folder per module
+```
 
 Every module follows the same contract:
 
@@ -21,14 +69,44 @@ modules/<slug>/
 
 `module.php` is a declarative manifest. `src/Module.php` contains the namespaced module bootstrap class. Module-specific implementation files live below `src/`.
 
-Current module namespaces:
-
-- `DovetailStudio\SchemaSeo\Module`
-- `DovetailStudio\Newsletter\Module`
-- `DovetailStudio\SchemaSeoWooCommerce\Module`
-- `DovetailStudio\VirtualAssistant\Module`
+| Module | Bootstrap class |
+| --- | --- |
+| Schema SEO | `DovetailStudio\SchemaSeo\Module` |
+| Schema SEO WooCommerce | `DovetailStudio\SchemaSeoWooCommerce\Module` |
+| Newsletter | `DovetailStudio\Newsletter\Module` |
+| Virtual Assistant | `DovetailStudio\VirtualAssistant\Module` |
 
 The core loader is `DovetailStudio\Core\Loader` in `src/Core/Loader.php`.
+
+## Structured data at a glance
+
+Schema modules never print their own `<script>`. With Yoast SEO active they enrich or add pieces inside Yoast's graph; without it they add pieces to the single graph printed by `DovetailStudio\Core\Seo\SchemaGraph`. Themes render breadcrumbs from `dovetail_studio_get_breadcrumbs()` and never print breadcrumb JSON-LD.
+
+| Scenario | Schema graph | Breadcrumb trail |
+| --- | --- | --- |
+| Yoast SEO active | Yoast's, enriched by the modules | Yoast's |
+| Yoast SEO inactive or its JSON-LD disabled | Dovetail Studio's | Dovetail Studio's (WooCommerce's on shop pages) |
+
+## Naming conventions
+
+All project-authored PHP follows PSR-4-style naming inside the `DovetailStudio` namespace:
+
+| Item | Convention | Examples |
+| --- | --- | --- |
+| Class file | Exact class name in PascalCase, no underscores, one class per file | `Loader.php`, `SchemaGraph.php`, `SiteGraph.php`, `Breadcrumbs.php` |
+| Class | PascalCase, matching its file name | `final class SchemaGraph` |
+| Namespace | `DovetailStudio\<Area>`, PascalCase segments matching the folders below `src/` | `DovetailStudio\Core\Seo`, `DovetailStudio\SchemaSeo` |
+| Procedural file (functions, manifest, runtime, views) | Lowercase kebab-case | `module.php`, `functions.php`, `runtime.php`, `public-settings.php` |
+| Folder mapped to a namespace | PascalCase | `src/Core/`, `src/Core/Seo/` |
+| Any other folder | Lowercase kebab-case | `modules/schema-seo/`, `src/services/`, `assets/`, `views/` |
+| Global function | `dovetail_studio_*` or the module prefix, snake_case | `dovetail_studio_get_breadcrumbs()`, `dovetail_schema_seo_woocommerce_get_settings()` |
+| Hook | `dovetail_studio_*` or the module prefix, snake_case | `dovetail_studio_schema_graph`, `dovetail_studio_breadcrumb_items` |
+| Method and variable | snake_case | `get_items()`, `$webpage_id` |
+
+Existing option names, hook names and other persisted identifiers keep their names even when they predate these conventions (for example `lbs_options`).
+
+> [!NOTE]
+> These file names do not follow the WordPress Coding Standards `class-*.php` rule. When PHPCS runs on this plugin, exclude `WordPress.Files.FileName` (for example `<exclude name="WordPress.Files.FileName"/>` in the `WordPress` rule of `phpcs.xml.dist`).
 
 ## Module lifecycle
 
@@ -42,7 +120,7 @@ All Dovetail admin screens use `assets/admin/dovetail-admin.css`. Module-specifi
 
 ## Versioning
 
-Dovetail Studio uses its own version. Each module also declares its own version in `module.php` and in its `Module` bootstrap where required.
+Dovetail Studio uses its own version, recorded in the plugin header, `readme.txt` and [`CHANGELOG.md`](./CHANGELOG.md). Each module also declares its own version in `module.php` and in its `Module` bootstrap where required; bundled module versions are listed in every changelog entry.
 
 ## Possible Errors and How to Fix Them
 

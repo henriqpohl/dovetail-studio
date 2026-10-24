@@ -6,7 +6,7 @@ The Virtual Assistant provides its REST endpoints, knowledge base, enquiry workf
 
 ## Structure
 
-`src/Module.php` boots `src/runtime.php`. Service files are under `src/Services/`, front-end/admin assets under `assets/`, markup under `views/`, and the bundled knowledge source under `resources/`. Extended technical notes remain under `docs/`.
+`src/Module.php` boots `src/runtime.php`. Service files are under `src/services/`, front-end/admin assets under `assets/`, markup under `views/`, and the bundled knowledge source under `resources/`. Extended technical notes remain under `docs/`.
 
 The Virtual Assistant keeps its own external **VA Enquiries** admin menu. Inside Dovetail Studio there is only one **Virtual Assistant** shortcut that redirects to its settings page.
 
