@@ -201,6 +201,9 @@ final class Admin {
 		$output['enabled']       = empty( $input['enabled'] ) ? 0 : 1;
 		$output['display_scope'] = isset( $input['display_scope'] ) && 'homepage' === $input['display_scope'] ? 'homepage' : 'sitewide';
 		$output['schema_type']   = $this->sanitize_schema_type( isset( $input['schema_type'] ) ? $input['schema_type'] : '' );
+		$output['site_graph_enabled']     = empty( $input['site_graph_enabled'] ) ? 0 : 1;
+		$output['breadcrumbs_enabled']    = empty( $input['breadcrumbs_enabled'] ) ? 0 : 1;
+		$output['breadcrumbs_home_label'] = isset( $input['breadcrumbs_home_label'] ) ? sanitize_text_field( $input['breadcrumbs_home_label'] ) : '';
 
 		$text_fields = array(
 			'name', 'alternate_name', 'legal_name', 'telephone', 'price_range',
@@ -293,7 +296,7 @@ final class Admin {
 						<?php elseif ( Schema::is_yoast_active() ) : ?>
 							<?php esc_html_e( 'Yoast SEO detected. The existing Organization entity will be enriched; no second entity is printed.', 'local-business-schema' ); ?>
 						<?php else : ?>
-							<?php esc_html_e( 'Yoast SEO not detected. The plugin will print an independent JSON-LD entity in wp_head.', 'local-business-schema' ); ?>
+							<?php esc_html_e( 'Yoast SEO not detected. The plugin prints a single JSON-LD graph in wp_head with the business entity, the site graph and the breadcrumb trail.', 'local-business-schema' ); ?>
 						<?php endif; ?>
 					</p>
 				</div>
@@ -307,6 +310,7 @@ final class Admin {
 				<a href="#dovetail-type-specific"><?php esc_html_e( 'Type-specific', 'local-business-schema' ); ?></a>
 				<a href="#dovetail-profiles"><?php esc_html_e( 'Profiles', 'local-business-schema' ); ?></a>
 				<a href="#dovetail-identifiers"><?php esc_html_e( 'Identifiers', 'local-business-schema' ); ?></a>
+				<a href="#dovetail-site-graph"><?php esc_html_e( 'Site Graph & Breadcrumbs', 'local-business-schema' ); ?></a>
 				<a href="#dovetail-json-preview"><?php esc_html_e( 'JSON-LD Preview', 'local-business-schema' ); ?></a>
 				<a href="#dovetail-integration"><?php esc_html_e( 'Integration', 'local-business-schema' ); ?></a>
 			</nav>
@@ -391,6 +395,12 @@ final class Admin {
 
 				<?php $this->section_start( __( 'JSON-LD Preview', 'local-business-schema' ), __( 'Load the JSON-LD currently published on the homepage, including the Yoast graph enriched by this plugin.', 'local-business-schema' ), 'json-preview' ); ?>
 				<?php $this->json_preview(); ?>
+				<?php $this->section_end(); ?>
+
+				<?php $this->section_start( __( 'Site Graph & Breadcrumbs', 'local-business-schema' ), __( 'With Yoast SEO active, Yoast provides WebSite, WebPage, Article and BreadcrumbList and the breadcrumb trail follows the Yoast breadcrumb settings. Without Yoast SEO, this module adds them to a single JSON-LD graph together with the business entity.', 'local-business-schema' ), 'site-graph' ); ?>
+				<?php $this->checkbox( 'site_graph_enabled', __( 'Site graph', 'local-business-schema' ), $options['site_graph_enabled'], __( 'Add WebSite, WebPage, Article and author entities when Yoast SEO is not providing the graph.', 'local-business-schema' ) ); ?>
+				<?php $this->checkbox( 'breadcrumbs_enabled', __( 'Breadcrumbs', 'local-business-schema' ), $options['breadcrumbs_enabled'], __( 'Provide the breadcrumb trail to the theme through dovetail_studio_get_breadcrumbs() and add BreadcrumbList when Yoast SEO is not providing the graph.', 'local-business-schema' ) ); ?>
+				<?php $this->basic_input( 'breadcrumbs_home_label', __( 'Home label', 'local-business-schema' ), $options['breadcrumbs_home_label'], 'text', __( 'First breadcrumb text when the plugin builds the trail. Leave empty to use "Home". With Yoast SEO, set it in the Yoast breadcrumb settings instead.', 'local-business-schema' ) ); ?>
 				<?php $this->section_end(); ?>
 
 				<?php $this->section_start( __( 'Integration', 'local-business-schema' ), __( 'Automatic keeps an existing Yoast property and uses the module value only when that property is missing. Use plugin value explicitly replaces that property; a blank plugin value omits it. Fields without a source selector are controlled directly by this plugin.', 'local-business-schema' ), 'integration' ); ?>

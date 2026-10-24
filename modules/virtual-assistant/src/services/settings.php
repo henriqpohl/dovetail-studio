@@ -9,7 +9,7 @@ function dt_va_settings_page() {
     $allowed_tabs = array('ai-keys', 'company', 'theme', 'ai-assistant', 'knowledge', 'flow', 'faq', 'case-studies');
     $tab = isset($_GET['tab']) && in_array($_GET['tab'], $allowed_tabs, true) ? sanitize_key(wp_unslash($_GET['tab'])) : 'ai-keys';
     echo '<div class="wrap dovetail-wrap">';
-    echo '<div class="dovetail-page-header"><div><h1>Virtual Assistant</h1><p>Configure AI providers, company data, knowledge, conversation flow and appearance.</p></div><span class="dovetail-version">v1.31.0</span></div>';
+    echo '<div class="dovetail-page-header"><div><h1>Virtual Assistant</h1><p>Configure AI providers, company data, knowledge, conversation flow and appearance.</p></div><span class="dovetail-version">v1.31.1</span></div>';
     echo '<nav class="dovetail-section-nav" aria-label="Virtual Assistant settings">';
     foreach (array('ai-keys' => 'AI Keys', 'company' => 'Company', 'ai-assistant' => 'AI Assistant', 'knowledge' => 'Knowledge base', 'flow' => 'Doors', 'faq' => 'Offline FAQ', 'case-studies' => 'Portfolio', 'theme' => 'Theme') as $id => $title) {
         $url = admin_url('edit.php?post_type=dt_enquiry&page=dt-va-settings&tab=' . $id);

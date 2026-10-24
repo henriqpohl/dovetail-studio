@@ -7,6 +7,12 @@
 - Esclarecido em USAGE.md e README.md o comportamento dos defaults na revisão introduzida em 1.31.0: pendência inicial nas quatro seções, aceitação explícita dos padrões permitidos, restrições para Knowledge base/Sample de Portfolio e retorno imediato da pendência após Restore default ou Save bem-sucedido.
 - Incluídos tabela por seção e exemplo do Offline FAQ. Alteração apenas documental, sem mudança de comportamento do plugin.
 
+## 1.31.1 — 24/10/2026
+
+### Manutenção
+
+- Pasta `src/Services/` renomeada para `src/services/`, seguindo a convenção de nomes do Dovetail Studio (pastas que não correspondem a um namespace ficam em minúsculas). Os `require_once` de `src/runtime.php` foram atualizados. Sem mudança de comportamento.
+
 ## 1.31.0 — 29/09/2026
 
 ### Revisão da configuração por empresa e aviso atualizado imediatamente

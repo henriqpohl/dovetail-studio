@@ -7,6 +7,9 @@
 
 namespace DovetailStudio\SchemaSeo;
 
+use DovetailStudio\Core\Seo\Environment;
+use DovetailStudio\Core\Seo\SchemaGraph;
+
 defined( 'ABSPATH' ) || exit;
 
 final class Schema {
@@ -52,29 +55,17 @@ final class Schema {
 		'duns',
 	);
 
-	/** Whether Yoast built a Schema graph during this request. */
-	private $yoast_graph_seen = false;
-
-	/** Whether Yoast built an Organization piece during this request. */
-	private $organization_integrated = false;
-
-	/** Whether Yoast's final JSON-LD output is enabled. Null means unknown. */
-	private $yoast_output_enabled = null;
-
 	/** Register frontend hooks. */
 	public function register_hooks() {
 		add_action( 'wp', array( __CLASS__, 'normalize_json_float_precision' ), 0 );
 		add_filter( 'wpseo_schema_organization', array( $this, 'filter_yoast_organization' ), 20, 2 );
 		add_filter( 'wpseo_schema_graph', array( $this, 'filter_yoast_graph' ), 20, 2 );
-		add_filter( 'wpseo_json_ld_output', array( $this, 'track_yoast_output' ), PHP_INT_MAX, 1 );
-		add_action( 'wp_head', array( $this, 'render_standalone_schema' ), 99 );
+		add_filter( SchemaGraph::FILTER, array( $this, 'add_standalone_pieces' ), 10 );
 	}
 
 	/** Prevent PHP float artifacts from leaking into frontend JSON-LD numbers. */
 	public static function normalize_json_float_precision() {
-		if ( '-1' !== (string) ini_get( 'serialize_precision' ) ) {
-			@ini_set( 'serialize_precision', '-1' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Some hosts disable runtime INI changes.
-		}
+		SchemaGraph::normalize_json_float_precision();
 	}
 
 	/**
@@ -83,7 +74,7 @@ final class Schema {
 	 * @return bool
 	 */
 	public static function is_yoast_active() {
-		return defined( 'WPSEO_VERSION' ) || function_exists( 'YoastSEO' ) || class_exists( 'WPSEO_Options' );
+		return Environment::has_yoast();
 	}
 
 	/**
@@ -98,7 +89,6 @@ final class Schema {
 			return $data;
 		}
 
-		$this->organization_integrated = true;
 		self::normalize_json_float_precision();
 		return $this->merge_schema( $data );
 	}
@@ -116,7 +106,6 @@ final class Schema {
 			return $graph;
 		}
 
-		$this->yoast_graph_seen = true;
 		self::normalize_json_float_precision();
 
 		if ( ! $this->should_output() ) {
@@ -128,53 +117,41 @@ final class Schema {
 			if ( is_array( $piece ) && $this->is_organization_piece( $piece ) ) {
 				$graph[ $index ] = $this->merge_schema( $piece );
 				$organization_found = true;
-				$this->organization_integrated = true;
 				break;
 			}
 		}
 
 		if ( ! $organization_found ) {
 			$graph[] = $this->merge_schema( $this->base_schema( false ) );
-			$this->organization_integrated = true;
 		}
 
 		return $graph;
 	}
 
 	/**
-	 * Observe whether Yoast's final frontend JSON-LD output was disabled.
+	 * Add the Organization entity to the shared standalone graph printed by the
+	 * Dovetail Studio core when Yoast does not provide a graph.
 	 *
-	 * @param mixed $output Yoast output control value.
-	 * @return mixed
+	 * @param array $pieces Standalone graph pieces.
+	 * @return array
 	 */
-	public function track_yoast_output( $output ) {
-		$this->yoast_output_enabled = false !== $output && array() !== $output;
-		return $output;
-	}
+	public function add_standalone_pieces( $pieces ) {
+		$pieces = is_array( $pieces ) ? $pieces : array();
 
-	/** Render independent JSON-LD when Yoast did not produce an usable graph. */
-	public function render_standalone_schema() {
 		if ( ! $this->should_output() ) {
-			return;
-		}
-
-		$yoast_graph_available = false !== $this->yoast_output_enabled
-			&& ( $this->yoast_graph_seen || $this->organization_integrated );
-
-		if ( $yoast_graph_available ) {
-			return;
+			return $pieces;
 		}
 
 		self::normalize_json_float_precision();
-		$schema = $this->merge_schema( $this->base_schema( true ) );
+		$schema = $this->merge_schema( $this->base_schema( false ) );
 
-		if ( count( $schema ) <= 3 ) {
-			return;
+		// Only @id and @type: nothing configured yet, so no entity is printed.
+		if ( count( $schema ) <= 2 ) {
+			return $pieces;
 		}
 
-		echo "\n<script type=\"application/ld+json\" class=\"local-business-schema\">";
-		echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON is encoded safely.
-		echo "</script>\n";
+		$pieces[] = $schema;
+		return $pieces;
 	}
 
 	/** Build the stable identity used when Yoast has no Organization. */
@@ -590,6 +567,9 @@ final class Schema {
 		return array(
 			'enabled'          => 1,
 			'display_scope'    => 'sitewide',
+			'site_graph_enabled'     => 1,
+			'breadcrumbs_enabled'    => 1,
+			'breadcrumbs_home_label' => '',
 			'schema_type'      => 'LocalBusiness',
 			'name'             => '',
 			'alternate_name'   => '',

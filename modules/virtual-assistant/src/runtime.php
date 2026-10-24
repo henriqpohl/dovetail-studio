@@ -9,14 +9,14 @@ if (!defined('ABSPATH') || !defined('DOVETAIL_STUDIO_VERSION')) exit;
 
 /* ================= CONFIG ================= */
 // Credentials belong in wp-config.php, environment variables or protected admin settings.
-require_once __DIR__ . '/Services/providers.php';
-require_once __DIR__ . '/Services/company.php';
-require_once __DIR__ . '/Services/ai-assistant.php';
-require_once __DIR__ . '/Services/knowledge.php';
-require_once __DIR__ . '/Services/flow.php';
-require_once __DIR__ . '/Services/faq.php';
-require_once __DIR__ . '/Services/case-studies.php';
-require_once __DIR__ . '/Services/theme.php';
+require_once __DIR__ . '/services/providers.php';
+require_once __DIR__ . '/services/company.php';
+require_once __DIR__ . '/services/ai-assistant.php';
+require_once __DIR__ . '/services/knowledge.php';
+require_once __DIR__ . '/services/flow.php';
+require_once __DIR__ . '/services/faq.php';
+require_once __DIR__ . '/services/case-studies.php';
+require_once __DIR__ . '/services/theme.php';
 add_action('wp_ajax_dt_va_json_validate', 'dt_va_json_validate_ajax');
 add_action('admin_enqueue_scripts', function () {
     if (!isset($_GET['page']) || $_GET['page'] !== 'dt-va-settings' || !current_user_can('manage_options')) return;
@@ -26,7 +26,7 @@ add_action('admin_enqueue_scripts', function () {
 add_action('init', function () {
     if (wp_next_scheduled('dt_va_google_refresh')) wp_clear_scheduled_hook('dt_va_google_refresh');
 });
-require_once __DIR__ . '/Services/public-settings.php';
+require_once __DIR__ . '/services/public-settings.php';
 if (!defined('DT_VA_TURNSTILE_SITE'))   define('DT_VA_TURNSTILE_SITE', '');        /* Optional. Cloudflare Turnstile site key. Blank = off. */
 if (!defined('DT_VA_TURNSTILE_SECRET')) define('DT_VA_TURNSTILE_SECRET', '');      /* Optional. Cloudflare Turnstile secret key. Prefer wp-config.php. */
 if (!defined('DT_VA_ASK_PER_HOUR'))  define('DT_VA_ASK_PER_HOUR', 30);             /* Rate limit per visitor IP for /ask. */
@@ -362,7 +362,7 @@ $dt_va_register = function () {
 if (did_action('init')) $dt_va_register(); else add_action('init', $dt_va_register);
 
 /* ================= SETTINGS: PROVIDERS (3.0) ================= */
-require_once __DIR__ . '/Services/settings.php';
+require_once __DIR__ . '/services/settings.php';
 
 /* Review actions and settings POSTs run before the notice is rendered. */
 add_action('admin_init', 'dt_va_setup_process_request');
