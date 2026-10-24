@@ -1,0 +1,148 @@
+<div class="dt-va-nudge" id="dt-va-nudge" role="status" hidden>
+  <button class="dt-va-nudge-body" id="dt-va-nudge-open" type="button">
+    <b>Planning a rebrand, a brochure or a website?</b>Ask me anything, or leave
+    the team a brief.
+  </button>
+  <button
+    class="dt-va-nudge-x"
+    id="dt-va-nudge-x"
+    type="button"
+    aria-label="Dismiss"
+  >
+    ×
+  </button>
+</div>
+<button
+  class="dt-va-tab"
+  id="dt-va-tab"
+  type="button"
+  aria-haspopup="dialog"
+  aria-controls="dt-va"
+  aria-label="Open the AI Assistant"
+>
+  <span class="dt-va-mark" aria-hidden="true">DM</span>
+  <span class="dt-va-lbl" aria-hidden="true">AI Assistant</span>
+  <!-- <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#fff"
+    stroke-width="1.6"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8z" />
+    <path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z" />
+  </svg> -->
+
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#fff"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="lucide lucide-wand-sparkles preview-icon"
+  >
+    <path
+      d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"
+    />
+    <path d="m14 7 3 3" />
+    <path d="M5 6v4" />
+    <path d="M19 14v4" />
+    <path d="M10 2v2" />
+    <path d="M7 8H3" />
+    <path d="M21 16h-4" />
+    <path d="M11 3H9" />
+  </svg>
+
+</button>
+
+<section
+  class="dt-va"
+  id="dt-va"
+  role="dialog"
+  aria-modal="false"
+  aria-label="AI Assistant"
+  data-lenis-prevent
+  hidden
+>
+  <header class="dt-va-head">
+    <div class="dt-va-avatar" aria-hidden="true">DM</div>
+    <div class="dt-va-who">
+      <b>AI Assistant</b
+      ><small id="dt-va-status"
+        ><i></i>Read by the Dovetail Consultancy team</small
+      >
+    </div>
+    <button
+      class="dt-va-restart"
+      id="dt-va-restart"
+      type="button"
+      aria-label="Start again"
+      title="Start again"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7" />
+        <path d="M3 4v5h5" />
+      </svg>
+    </button>
+    <button class="dt-va-x" id="dt-va-close" type="button" aria-label="Close">
+      ×
+    </button>
+  </header>
+  <div class="dt-va-body" id="dt-va-body" aria-live="polite"></div>
+  <div class="dt-va-chips" id="dt-va-chips"></div>
+  <footer class="dt-va-foot">
+    <div class="dt-va-inputrow">
+      <textarea
+        id="dt-va-input"
+        rows="1"
+        placeholder="Type a question or an answer…"
+        aria-label="Type a message"
+      ></textarea>
+      <button
+        class="dt-va-send"
+        id="dt-va-send"
+        type="button"
+        aria-label="Send"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          style="
+            width: 22px;
+            height: 22px;
+            stroke: #fff;
+            fill: none;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+          "
+        >
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </button>
+    </div>
+    <div class="dt-va-links">
+      <button id="dt-va-human" type="button">Talk to a person</button>
+      <a
+        id="dt-va-wa"
+        class="dt-va-wa"
+        href="#"
+        target="_blank"
+        rel="noopener"
+        hidden
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"
+          /></svg
+        >WhatsApp</a
+      >
+      <span id="dt-va-hours">01 961 0034 · Mon to Fri</span>
+    </div>
+  </footer>
+</section>
