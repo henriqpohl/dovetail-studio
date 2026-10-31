@@ -116,11 +116,14 @@ function dt_va_theme_css_vars() {
 	);
 }
 
-/** Inline :root override, printed in wp_head so the first paint already has the saved colors;
- *  without this, front.js only applies them after it loads, causing a visible flash to the CSS defaults.
- *  !important is required: front-tab.css, the enqueued stylesheet, declares the same :root defaults and prints
- *  after this (wp_print_styles runs on wp_head at priority 8, this hook at priority 5), so without it the
- *  later, equally-specific stylesheet rule would win and silently override the color set here. */
+/**
+ * The saved colours as a :root override, added after front-tab.css with wp_add_inline_style() so the first paint
+ * already has them; without it, front.js only applies them after it loads, causing a visible flash to the CSS defaults.
+ * The rules keep !important: front-tab.css declares the same :root defaults, and a page optimiser that combines or
+ * moves styles could otherwise print the stylesheet after this override and silently win.
+ *
+ * @return string CSS rules, or an empty string when no valid colour is saved.
+ */
 function dt_va_theme_css() {
 	$theme = dt_va_theme_config();
 	$rules = '';
@@ -131,7 +134,7 @@ function dt_va_theme_css() {
 		}
 	}
 
-	return '' === $rules ? '' : '<style id="dt-va-theme-vars">:root{' . $rules . '}</style>';
+	return '' === $rules ? '' : ':root{' . $rules . '}';
 }
 
 function dt_va_theme_settings() {
@@ -165,24 +168,12 @@ function dt_va_theme_settings() {
 		);
 	}
 
-	$theme = dt_va_theme_config();
-	echo '<h2>'
-		. esc_html__( 'Theme', 'dovetail-studio' ) . '</h2><p>'
-		. esc_html__( 'Customize the assistant colors. Changes appear on the public chat after saving.', 'dovetail-studio' )
-		. '</p><form method="post">';
-	wp_nonce_field( 'dt_va_theme' );
-	echo '<input type="hidden" name="dt_va_theme" value="1"><table class="form-table">';
-
-	foreach ( dt_va_theme_fields() as $key => $meta ) {
-		echo '<tr><th><label for="dt-va-theme-'
-			. esc_attr( $key ) . '">' . esc_html( $meta['label'] )
-			. '</label></th><td><input id="dt-va-theme-' . esc_attr( $key ) . '" name="theme['
-			. esc_attr( $key ) . ']" type="color" value="' . esc_attr( $theme[ $key ] ) . '"> <code>'
-			. esc_html( $theme[ $key ] ) . '</code></td></tr>';
-	}
-
-	echo '</table><p><button class="button button-primary">'
-		. esc_html__( 'Save theme', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_theme" value="1" formnovalidate>'
-		. esc_html__( 'Restore default theme', 'dovetail-studio' ) . '</button></p></form>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-theme',
+		array(
+			'theme'  => dt_va_theme_config(),
+			'fields' => dt_va_theme_fields(),
+		)
+	);
 }

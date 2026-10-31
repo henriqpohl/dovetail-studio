@@ -131,7 +131,7 @@ function register_setting($g,$n,$a=[]){ $GLOBALS['__settings'][$n]=$a;}
 function settings_fields($g){} function settings_errors($s=''){ echo '<!--settings_errors-->';} function add_settings_error($s,$c,$m,$t='error'){ $GLOBALS['__settings_errors'][]=[$s,$c,$m];}
 function submit_button($t='Save',$c='primary',$n='submit',$w=true){ echo "<button>$t</button>";}
 function checked($a,$b=true,$e=true){ $r=$a==$b?' checked="checked"':''; if($e) echo $r; return $r;} function selected($a,$b=true,$e=true){ $r=(string)$a===(string)$b?' selected="selected"':''; if($e) echo $r; return $r;}
-function wp_enqueue_style(...$a){ $GLOBALS['__enq'][]=$a[0];} function wp_enqueue_script(...$a){ $GLOBALS['__enq'][]=$a[0];} function wp_localize_script(){} function wp_add_inline_script($h,$d,$p="after"){ $GLOBALS["__inline"][$h][]=$d; return true; } function wp_enqueue_media(){}
+function wp_enqueue_style(...$a){ $GLOBALS['__enq'][]=$a[0];} function wp_enqueue_script(...$a){ $GLOBALS['__enq'][]=$a[0];} function wp_localize_script(){} function wp_add_inline_script($h,$d,$p="after"){ $GLOBALS["__inline"][$h][]=$d; return true; } function wp_add_inline_style($h,$d){ $GLOBALS["__inline_css"][$h][]=$d; return true; } function wp_enqueue_media(){}
 function register_deactivation_hook($f,$cb){ $GLOBALS['__deact']=$cb;}
 function shortcode_exists($t){return false;} function do_shortcode($s){return $s;}
 function get_permalink($p=0){ $id=is_object($p)?$p->ID:$p; return 'https://example.com/?p='.$id;} function wp_get_canonical_url($p=0){ return get_permalink($p);}
@@ -209,3 +209,4 @@ function dbDelta($sql){ foreach(array_filter(array_map('trim',explode(';',(strin
    $line=preg_replace('/^UNIQUE KEY \w+ /','UNIQUE ',$line); $line=preg_replace('/bigint\(20\) unsigned NOT NULL AUTO_INCREMENT/','INTEGER PRIMARY KEY AUTOINCREMENT',$line); $line=str_replace(' unsigned','',$line); $cols[]=$line; }
   $GLOBALS['wpdb']->pdo->exec("CREATE TABLE IF NOT EXISTS {$m[1]} (".implode(', ',$cols).")"); } return array(); }
 $GLOBALS['wpdb']=new FakeWpdb();
+function _doing_it_wrong($f,$m,$v){ $GLOBALS['__warnings'][]='doing_it_wrong: '.$f.' '.$m; }

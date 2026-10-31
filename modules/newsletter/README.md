@@ -6,7 +6,7 @@ The Newsletter module renders a configured Contact Form 7 newsletter form and su
 
 ## Structure
 
-`src/Module.php` defines module constants and loads `src/functions.php`. Admin JavaScript lives in `assets/js/admin.js`.
+`src/Module.php` defines module constants and loads `src/functions.php`. The settings screen markup is in `views/admin-page.php` and the front-end "not configured" message in `views/partials/status.php`. Admin JavaScript lives in `assets/js/admin.js`.
 
 ## Dependency
 

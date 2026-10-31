@@ -4,7 +4,42 @@ All notable changes to Dovetail Studio and its bundled modules should be documen
 
 The format is based on Keep a Changelog and follows Semantic Versioning where possible. Module versions are listed in each entry; every module also declares its own version in `module.php`.
 
-## [Unreleased]
+## [2.6.0] - 2026-10-31
+
+### Changed
+
+- Core:
+  - New `DovetailStudio\Core\View` helper: `View::render( $dir, $name, $args )` and `View::capture()` include `views/<name>.php` in its own scope, refuse names outside `views/` and report a missing template with `_doing_it_wrong()`.
+  - The Dashboard and Modules screens moved to `src/Core/views/`; `Loader` prepares the module rows and the notice.
+  - `AdminScreens::notice()` renders `src/Core/views/notice.php`; the markup is unchanged.
+  - New `assets/admin/dovetail-admin.js`, loaded with the shared CSS on every Studio screen: links and buttons with `data-dovetail-confirm` ask before they run. The Modules screen uses it instead of an inline `onclick`.
+  - `assets/admin/dovetail-admin.css`:
+    - Design tokens for every colour, shadow and font size (neutrals, primary, success, warning, danger, three shadows, `rem` interface sizes and fluid titles). They are also set on `.dovetail-admin-page`, so module list screens can use them. No rule writes a colour or a `px` font size any more; near-identical greys, greens and secondary text colours were merged into one token each.
+    - Titles are fluid: the page title goes from 22px on a 375px screen to 26px from 1200px, and card titles from 16px to 18px. Desktop sizes are unchanged.
+    - New shared classes `dovetail-code-editor`, `dovetail-inline-check`, `dovetail-required`, `dovetail-field-missing`, `dovetail-text-success`, `dovetail-text-danger` and `dovetail-chart`.
+- Login Guard:
+  - The admin screen and its six tabs, the two-factor code screen and profile section, the captcha field and the block page moved to `views/`; `Admin` only checks permissions and builds each tab's data.
+  - The reCAPTCHA score chart sizes itself with `dovetail-chart` instead of an inline `style`.
+- Vulnerability Watch:
+  - The admin screen, its checkbox rows and the site changes table moved to `views/`.
+- Hide Login Path:
+  - The admin screen moved to `views/admin-page.php`.
+- Schema SEO:
+  - The settings screen and its sections, fields, opening hours, JSON-LD preview and integration summary moved to `views/`.
+- Schema SEO WooCommerce:
+  - The settings screen, status badge and missing WooCommerce notice moved to `views/`.
+- Newsletter:
+  - The settings screen and the front-end "not configured" message moved to `views/`.
+- Virtual Assistant:
+  - The settings page and its eight tabs, the company notes page, the attachment box, the enquiry list columns, the setup review and the admin notices moved to `views/`; the service functions only handle the forms and prepare the data.
+  - No inline JavaScript or CSS left in the admin templates: the door hint under **Add a door → Service** is `assets/js/admin-doors.js` (Doors tab only; it was a `<script>` between two table rows), and the code editors, required fields, enquiry list columns and Collapse Avatar checkbox use the shared Studio classes. The "Call back: Yes" column now uses the admin red (`#d63638`) instead of `#E2231A`, and "Answered: Yes" the Studio success green (`#116329`) instead of `#1a7f37`.
+  - Front end: the loader settings (`window.DT_VA_LOADER`) are added with `wp_add_inline_script()` before `front-loader.js`, keeping `data-no-optimize`, `data-no-defer` and `data-cfasync="false"` through `wp_inline_script_attributes`; the saved theme colours are added after `front-tab.css` with `wp_add_inline_style()`. Both used to be printed directly in `wp_head`.
+  - `admin-json.js` is loaded through `dt_va_asset()`, and `admin-json.js`, `admin-doors.js` and `dovetail-admin.js` are minified by `tools/build.php`.
+- Plugin:
+  - `CONTRIBUTING.md`, `README.md` and the Core docs state that HTML lives only in `views/`; the per-file PHPCS exclusions for HTML templates were removed.
+- Tests:
+  - `tests/core-view.php` covers `Core\View` (rendering, scope isolation, refused names, missing templates); the simulator gained `_doing_it_wrong()`.
+  - Tests for the shared admin script and assets, the CSS design tokens (no colour or `px` font size outside them), the notice markup, the Doors-only script, the loader settings attributes and the theme colours; the simulator gained `wp_add_inline_style()`.
 
 ## [2.5.0] - 2026-10-31
 
@@ -33,7 +68,6 @@ Bundled modules: Newsletter 3.4.0, Schema SEO 1.6.1, Schema SEO WooCommerce 1.3.
 - Schema SEO 1.6.1: the unhooked `Admin::add_settings_link()` was removed.
 - Virtual Assistant 1.33.1: the Turnstile check of the enquiry form uses `Core\Captcha`; its behaviour (refused when Cloudflare cannot be reached) and the `DT_VA_TURNSTILE_*` constants are unchanged.
 - Core: `Loader::asset()` returns a module asset's URL and version, preferring the `.min` file built by `tools/build.php`; the Virtual Assistant's `dt_va_asset()` uses it, and Login Guard's `assets/js/recaptcha.js` is built and served the same way.
-- Code standards: every PHPCS finding fixed (`composer lint` is clean); Login Guard's `Admin.php` and `TwoFactor.php` and Vulnerability Watch's `Admin.php` join the template files excluded from the block spacing rule in `phpcs.xml.dist`.
 
 ## [2.4.0] - 2026-10-25
 

@@ -118,8 +118,17 @@ $out = capture(function () { do_action('admin_head'); do_action('admin_notices')
 t('WordPress and third-party notices removed on Studio screens', strpos($out, 'WordPress 9') === false && strpos($out, 'Other plugin') === false);
 t('Studio notices still shown, with the class CSS keeps visible', strpos($out, 'Studio says hi') !== false && strpos($out, 'dovetail-notice') !== false);
 t('body class for the CSS fallback', strpos($A->body_class('x'), 'dovetail-admin-page') !== false);
+$GLOBALS['__enq'] = array();
+$A->enqueue_assets();
+t('Studio screens load the shared CSS and script', in_array('dovetail-studio-admin', $GLOBALS['__enq'], true) && count(array_keys($GLOBALS['__enq'], 'dovetail-studio-admin', true)) === 2);
+t('notice markup', capture(function () { AdminScreens::notice('bogus', 'Hi &amp; bye', true); }) === '<div class="notice notice-info dovetail-notice inline is-dismissible"><p>Hi &amp; bye</p></div>' . "\n");
+$js = file_get_contents(DOVETAIL_STUDIO_PATH . 'assets/admin/dovetail-admin.js');
+t('shared script confirms data-dovetail-confirm clicks', strpos($js, '[data-dovetail-confirm]') !== false && strpos($js, 'preventDefault') !== false);
+t('palette has the status colours', strpos(file_get_contents(DOVETAIL_STUDIO_PATH . 'assets/admin/dovetail-admin.css'), '--dovetail-danger:') !== false);
 $css = file_get_contents(DOVETAIL_STUDIO_PATH . 'assets/admin/dovetail-admin.css');
 t('CSS hides only non-Studio notices', strpos($css, '.notice:not(.dovetail-notice)') !== false);
+$rules = substr($css, strpos($css, '/* Studio screens show only'));
+t('CSS rules use only the design tokens', !preg_match('/#[0-9a-f]{3,8}\b|rgba?\(/i', $rules) && !preg_match('/font-size:\s*[0-9.]+px/', $css) && preg_match_all('/clamp\(/', $css) === 2);
 $GLOBALS['__settings_errors_out'] = array(array('setting' => 'general', 'code' => 'settings_updated', 'message' => 'Settings saved.', 'type' => 'success'));
 t('settings_errors() prints with the Studio class', strpos(capture(function () { AdminScreens::settings_errors(); }), 'notice-success dovetail-notice') !== false);
 $schema_admin = file_get_contents(DOVETAIL_STUDIO_PATH . 'modules/schema-seo/src/Admin.php');

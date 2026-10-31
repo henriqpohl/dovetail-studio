@@ -758,17 +758,21 @@ final class Loader {
 		$this->redirect_modules_page( 'success', $is_update ? 'updated' : 'installed' );
 	}
 
-	/** Render the status notice of a module operation. */
-	private function render_modules_notice() {
+	/**
+	 * The status notice of a module operation: type and message, or null.
+	 *
+	 * @return array{0: string, 1: string}|null
+	 */
+	private function modules_notice() {
 		$status   = isset( $_GET['dovetail_status'] ) ? sanitize_key( wp_unslash( $_GET['dovetail_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only redirect notice.
 		$code     = isset( $_GET['dovetail_code'] ) ? sanitize_key( wp_unslash( $_GET['dovetail_code'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only redirect notice.
 		$messages = $this->module_messages();
 
 		if ( ! isset( $messages[ $code ] ) || ! in_array( $status, array( 'success', 'error' ), true ) ) {
-			return;
+			return null;
 		}
 
-		AdminScreens::notice( $status, esc_html( $messages[ $code ] ), true );
+		return array( $status, $messages[ $code ] );
 	}
 
 	/**
@@ -785,55 +789,59 @@ final class Loader {
 		return '' === $text ? '' : __( $text, 'dovetail-studio' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Manifest texts, extracted by tools/build.php.
 	}
 
+	/**
+	 * The installed modules for the Studio screens: texts in the admin language, state and links.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function module_rows() {
+		$enabled = $this->get_enabled_modules();
+		$rows    = array();
+
+		foreach ( $this->modules as $slug => $module ) {
+			$on       = ! empty( $enabled[ $slug ] );
+			$uploaded = 'external' === $module['_source'];
+
+			$rows[] = array(
+				'slug'        => $slug,
+				'name'        => $this->module_text( $module, 'name' ),
+				'description' => $this->module_text( $module, 'description' ),
+				'version'     => (string) $module['version'],
+				'enabled'     => $on,
+				'uploaded'    => $uploaded,
+				'open_url'    => $on && ! empty( $module['admin_url'] ) ? admin_url( $module['admin_url'] ) : '',
+				'remove_url'  => ! $on && $uploaded && $this->can_manage_module_files()
+					? wp_nonce_url(
+						add_query_arg(
+							array(
+								'action' => 'dovetail_studio_remove_module',
+								'module' => $slug,
+							),
+							admin_url( 'admin-post.php' )
+						),
+						'dovetail_studio_remove_module_' . $slug
+					)
+					: '',
+			);
+		}
+
+		return $rows;
+	}
+
 	/** Main dashboard. */
 	public function render_dashboard() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		$enabled = $this->get_enabled_modules();
-		?>
-		<div class="wrap dovetail-wrap">
-			<div class="dovetail-page-header">
-				<div>
-					<h1><?php esc_html_e( 'Dovetail Studio', 'dovetail-studio' ); ?></h1>
-					<p><?php esc_html_e( 'Central WordPress toolkit for Dovetail Consultancy modules.', 'dovetail-studio' ); ?></p>
-				</div>
-				<span class="dovetail-version"><?php echo esc_html( 'v' . DOVETAIL_STUDIO_VERSION ); ?></span>
-			</div>
-
-			<nav class="dovetail-section-nav" aria-label="<?php esc_attr_e( 'Dovetail Studio sections', 'dovetail-studio' ); ?>">
-				<a class="is-active" aria-current="page" href="<?php echo esc_url( admin_url( 'admin.php?page=dovetail-studio' ) ); ?>"><?php esc_html_e( 'Dashboard', 'dovetail-studio' ); ?></a>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=dovetail-studio-modules' ) ); ?>"><?php esc_html_e( 'Modules', 'dovetail-studio' ); ?></a>
-			</nav>
-
-			<div class="dovetail-module-grid">
-				<?php foreach ( $this->modules as $slug => $module ) : ?>
-					<section class="dovetail-card dovetail-module-card">
-						<div class="dovetail-card-header">
-							<h2><?php echo esc_html( $this->module_text( $module, 'name' ) ); ?></h2>
-							<p class="description"><?php echo esc_html( $this->module_text( $module, 'description' ) ); ?></p>
-						</div>
-						<div class="dovetail-card-body">
-							<div class="dovetail-module-meta">
-								<span class="dovetail-badge">v<?php echo esc_html( $module['version'] ); ?></span>
-								<span class="dovetail-badge <?php echo ! empty( $enabled[ $slug ] ) ? 'is-enabled' : ''; ?>">
-									<?php
-									echo ! empty( $enabled[ $slug ] )
-										? esc_html__( 'Enabled', 'dovetail-studio' )
-										: esc_html__( 'Disabled', 'dovetail-studio' );
-									?>
-								</span>
-							</div>
-							<?php if ( ! empty( $module['admin_url'] ) && ! empty( $enabled[ $slug ] ) ) : ?>
-								<p><a class="button button-primary" href="<?php echo esc_url( admin_url( $module['admin_url'] ) ); ?>"><?php esc_html_e( 'Open module', 'dovetail-studio' ); ?></a></p>
-							<?php endif; ?>
-						</div>
-					</section>
-				<?php endforeach; ?>
-			</div>
-		</div>
-		<?php
+		View::render(
+			__DIR__,
+			'dashboard',
+			array(
+				'version' => DOVETAIL_STUDIO_VERSION,
+				'modules' => $this->module_rows(),
+			)
+		);
 	}
 
 	/** Manage installed Dovetail Studio modules. */
@@ -842,134 +850,17 @@ final class Loader {
 			return;
 		}
 
-		$enabled = $this->get_enabled_modules();
-		?>
-		<div class="wrap dovetail-wrap">
-			<div class="dovetail-page-header">
-				<div>
-					<h1><?php esc_html_e( 'Dovetail Studio', 'dovetail-studio' ); ?></h1>
-					<p><?php esc_html_e( 'Enable, disable, install, update or remove Dovetail Studio modules.', 'dovetail-studio' ); ?></p>
-				</div>
-				<span class="dovetail-version"><?php echo esc_html( 'v' . DOVETAIL_STUDIO_VERSION ); ?></span>
-			</div>
-
-			<nav class="dovetail-section-nav" aria-label="<?php esc_attr_e( 'Dovetail Studio sections', 'dovetail-studio' ); ?>">
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=dovetail-studio' ) ); ?>"><?php esc_html_e( 'Dashboard', 'dovetail-studio' ); ?></a>
-				<a class="is-active" aria-current="page" href="<?php echo esc_url( admin_url( 'admin.php?page=dovetail-studio-modules' ) ); ?>"><?php esc_html_e( 'Modules', 'dovetail-studio' ); ?></a>
-			</nav>
-
-			<?php $this->render_modules_notice(); ?>
-			<?php AdminScreens::settings_errors(); ?>
-
-			<?php if ( $this->can_manage_module_files() ) : ?>
-			<section class="dovetail-card">
-				<div class="dovetail-card-header">
-					<h2><?php esc_html_e( 'Upload Module', 'dovetail-studio' ); ?></h2>
-					<p class="description">
-					<?php
-					/* translators: %s: modules directory, e.g. wp-content/dovetail-modules. */
-					echo wp_kses_post( sprintf( __( 'Install a new Dovetail Studio module or upload a newer version of an existing module. Packages must be ZIP files containing a valid <code>module.php</code>. Uploaded modules are stored in <code>%s</code>, so plugin updates keep them.', 'dovetail-studio' ), esc_html( self::external_modules_dir_label() ) ) );
-					?>
-					</p>
-				</div>
-				<div class="dovetail-card-body">
-					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
-						<input type="hidden" name="action" value="dovetail_studio_upload_module">
-						<?php wp_nonce_field( 'dovetail_studio_upload_module' ); ?>
-						<input type="file" name="dovetail_module_zip" accept=".zip,application/zip" required>
-						<?php
-						submit_button(
-							__( 'Upload Module', 'dovetail-studio' ),
-							'secondary',
-							'submit',
-							false
-						);
-						?>
-					</form>
-				</div>
-			</section>
-			<?php endif; ?>
-
-			<form method="post" action="options.php">
-				<?php settings_fields( 'dovetail_studio_modules_group' ); ?>
-
-				<section class="dovetail-card">
-					<div class="dovetail-card-header">
-						<h2><?php esc_html_e( 'Installed Modules', 'dovetail-studio' ); ?></h2>
-						<p class="description"><?php esc_html_e( 'Disabled modules remain installed but are not loaded. A module must be disabled and saved before it can be removed.', 'dovetail-studio' ); ?></p>
-					</div>
-					<div class="dovetail-card-body">
-						<div class="dovetail-table-scroll">
-							<table class="widefat striped dovetail-modules-table">
-								<thead>
-									<tr>
-										<th><?php esc_html_e( 'Enabled', 'dovetail-studio' ); ?></th>
-										<th><?php esc_html_e( 'Module', 'dovetail-studio' ); ?></th>
-										<th><?php esc_html_e( 'Version', 'dovetail-studio' ); ?></th>
-										<th><?php esc_html_e( 'Source', 'dovetail-studio' ); ?></th>
-										<th><?php esc_html_e( 'Description', 'dovetail-studio' ); ?></th>
-										<th><?php esc_html_e( 'Actions', 'dovetail-studio' ); ?></th>
-									</tr>
-								</thead>
-								<tbody>
-								<?php if ( empty( $this->modules ) ) : ?>
-									<tr><td colspan="6"><?php esc_html_e( 'No modules installed.', 'dovetail-studio' ); ?></td></tr>
-								<?php else : ?>
-									<?php foreach ( $this->modules as $slug => $module ) : ?>
-										<tr>
-											<td>
-												<input type="hidden" name="dovetail_studio_modules[<?php echo esc_attr( $slug ); ?>]" value="0">
-												<label>
-													<input
-														type="checkbox"
-														name="dovetail_studio_modules[<?php echo esc_attr( $slug ); ?>]"
-														value="1"
-														<?php checked( ! empty( $enabled[ $slug ] ) ); ?>
-													>
-													<span class="screen-reader-text"><?php echo esc_html( sprintf( /* translators: %s: module name. */ __( 'Enable %s', 'dovetail-studio' ), $this->module_text( $module, 'name' ) ) ); ?></span>
-												</label>
-											</td>
-											<td><strong><?php echo esc_html( $this->module_text( $module, 'name' ) ); ?></strong></td>
-											<td><?php echo esc_html( $module['version'] ); ?></td>
-											<td><?php echo 'external' === $module['_source'] ? esc_html__( 'Uploaded', 'dovetail-studio' ) : esc_html__( 'Bundled', 'dovetail-studio' ); ?></td>
-											<td><?php echo esc_html( $this->module_text( $module, 'description' ) ); ?></td>
-											<td>
-												<?php if ( ! empty( $enabled[ $slug ] ) ) : ?>
-													<?php if ( ! empty( $module['admin_url'] ) ) : ?>
-														<a class="button button-small" href="<?php echo esc_url( admin_url( $module['admin_url'] ) ); ?>"><?php esc_html_e( 'Open', 'dovetail-studio' ); ?></a>
-													<?php endif; ?>
-												<?php elseif ( 'external' === $module['_source'] && $this->can_manage_module_files() ) : ?>
-													<?php
-													$remove_url = wp_nonce_url(
-														add_query_arg(
-															array(
-																'action' => 'dovetail_studio_remove_module',
-																'module' => $slug,
-															),
-															admin_url( 'admin-post.php' )
-														),
-														'dovetail_studio_remove_module_' . $slug
-													);
-													?>
-													<a
-														class="button button-small button-link-delete dovetail-remove-module"
-														href="<?php echo esc_url( $remove_url ); ?>"
-														onclick="return confirm('<?php echo esc_js( sprintf( /* translators: %s: module name. */ __( 'Remove %s? The module files will be deleted, but its WordPress database settings will be preserved.', 'dovetail-studio' ), $this->module_text( $module, 'name' ) ) ); ?>');"
-													><?php esc_html_e( 'Remove Module', 'dovetail-studio' ); ?></a>
-												<?php endif; ?>
-											</td>
-										</tr>
-									<?php endforeach; ?>
-								<?php endif; ?>
-								</tbody>
-							</table>
-						</div>
-						<?php submit_button( __( 'Save Modules', 'dovetail-studio' ) ); ?>
-					</div>
-				</section>
-			</form>
-		</div>
-		<?php
+		View::render(
+			__DIR__,
+			'modules',
+			array(
+				'version'     => DOVETAIL_STUDIO_VERSION,
+				'notice'      => $this->modules_notice(),
+				'can_upload'  => $this->can_manage_module_files(),
+				'modules_dir' => self::external_modules_dir_label(),
+				'modules'     => $this->module_rows(),
+			)
+		);
 	}
 
 	/** Add shortcut from Plugins screen. */

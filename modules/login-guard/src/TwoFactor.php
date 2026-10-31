@@ -8,6 +8,7 @@
 namespace DovetailStudio\LoginGuard;
 
 use DovetailStudio\Core\Crypto;
+use DovetailStudio\Core\View;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -566,31 +567,14 @@ final class TwoFactor {
 		}
 
 		login_header( __( 'Two-factor authentication', 'dovetail-studio' ), '', $errors );
-		?>
-		<form name="dovetail-lg-2fa" id="loginform" action="<?php echo esc_url( self::form_url( $user_id, $token ) ); ?>" method="post">
-			<p>
-				<label for="dovetail-lg-code"><?php esc_html_e( 'Authentication code', 'dovetail-studio' ); ?></label>
-				<input type="text" name="dovetail_lg_code" id="dovetail-lg-code" class="input" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" required aria-describedby="dovetail-lg-code-help">
-			</p>
-			<p class="description" id="dovetail-lg-code-help"><?php esc_html_e( 'Enter the 6-digit code from your authenticator app, or one of your recovery codes.', 'dovetail-studio' ); ?></p>
-
-			<?php if ( (int) Settings::get()['two_factor_remember_days'] > 0 ) : ?>
-				<p class="forgetmenot">
-					<input type="checkbox" name="dovetail_lg_trust" id="dovetail-lg-trust" value="1">
-					<label for="dovetail-lg-trust">
-					<?php
-					/* translators: %d: number of days. */
-					echo esc_html( sprintf( _n( 'Remember this device for %d day', 'Remember this device for %d days', (int) Settings::get()['two_factor_remember_days'], 'dovetail-studio' ), (int) Settings::get()['two_factor_remember_days'] ) );
-					?>
-					</label>
-				</p>
-			<?php endif; ?>
-
-			<p class="submit">
-				<input type="submit" class="button button-primary button-large" value="<?php esc_attr_e( 'Verify', 'dovetail-studio' ); ?>">
-			</p>
-		</form>
-		<?php
+		View::render(
+			dirname( __DIR__ ),
+			'two-factor-form',
+			array(
+				'action'        => self::form_url( $user_id, $token ),
+				'remember_days' => (int) Settings::get()['two_factor_remember_days'],
+			)
+		);
 		login_footer( 'dovetail-lg-code' );
 	}
 
@@ -728,121 +712,45 @@ final class TwoFactor {
 			return;
 		}
 
-		$codes = $own ? $this->take_fresh_codes( $user_id ) : array();
-		?>
-		<h2 id="dovetail-lg-2fa"><?php esc_html_e( 'Two-factor authentication', 'dovetail-studio' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<?php if ( $codes ) : ?>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Recovery codes', 'dovetail-studio' ); ?></th>
-					<td>
-						<p><strong><?php esc_html_e( 'Save these codes somewhere safe now; they are shown only once. Each one signs you in once if you lose your phone.', 'dovetail-studio' ); ?></strong></p>
-						<ol>
-							<?php foreach ( $codes as $code ) : ?>
-								<li><code><?php echo esc_html( $code ); ?></code></li>
-							<?php endforeach; ?>
-						</ol>
-					</td>
-				</tr>
-			<?php endif; ?>
+		$pending = '';
+		$qr      = '';
 
-			<?php if ( $active ) : ?>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Status', 'dovetail-studio' ); ?></th>
-					<td>
-						<p>
-						<?php
-						/* translators: %d: number of recovery codes left. */
-						echo esc_html( sprintf( _n( 'Active. %d recovery code left.', 'Active. %d recovery codes left.', self::recovery_left( $user_id ), 'dovetail-studio' ), self::recovery_left( $user_id ) ) );
-						?>
-						</p>
-					</td>
-				</tr>
+		// A user setting it up sees a new secret, kept until the code from the app confirms it.
+		if ( ! $active && $own ) {
+			$pending = Crypto::decrypt( (string) get_user_meta( $user_id, self::PENDING_META, true ), Settings::CRYPTO_CONTEXT );
 
-				<?php if ( $own ) : ?>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Recovery codes', 'dovetail-studio' ); ?></th>
-						<td><label><input type="checkbox" name="dovetail_lg_regenerate" value="1"> <?php esc_html_e( 'Create new recovery codes (the old ones stop working)', 'dovetail-studio' ); ?></label></td>
-					</tr>
+			if ( '' === $pending ) {
+				$pending   = self::new_secret();
+				$encrypted = Crypto::encrypt( $pending, Settings::CRYPTO_CONTEXT );
 
-					<?php if ( 'required' !== $mode ) : ?>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Turn off', 'dovetail-studio' ); ?></th>
-							<td><label><input type="checkbox" name="dovetail_lg_disable" value="1"> <?php esc_html_e( 'Turn off two-factor authentication', 'dovetail-studio' ); ?></label></td>
-						</tr>
-					<?php else : ?>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Turn off', 'dovetail-studio' ); ?></th>
-							<td><p class="description"><?php esc_html_e( 'Your role requires two-factor authentication. An administrator can reset it if you lose your phone and your recovery codes.', 'dovetail-studio' ); ?></p></td>
-						</tr>
-					<?php endif; ?>
-				<?php elseif ( current_user_can( 'edit_user', $user_id ) ) : ?>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Reset', 'dovetail-studio' ); ?></th>
-						<td>
-							<label><input type="checkbox" name="dovetail_lg_reset" value="1"> <?php esc_html_e( 'Reset two-factor authentication for this user', 'dovetail-studio' ); ?></label>
-							<p class="description"><?php esc_html_e( 'For a user who lost their phone and recovery codes. They sign in with the password only and set it up again.', 'dovetail-studio' ); ?></p>
-						</td>
-					</tr>
-				<?php endif; ?>
-			<?php elseif ( ! $own ) : ?>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Status', 'dovetail-studio' ); ?></th>
-					<td><p><?php echo 'required' === $mode ? esc_html__( 'Not set up yet (required for this user\'s role).', 'dovetail-studio' ) : esc_html__( 'Not set up.', 'dovetail-studio' ); ?></p></td>
-				</tr>
-			<?php else : ?>
-				<?php
-				$pending = Crypto::decrypt( (string) get_user_meta( $user_id, self::PENDING_META, true ), Settings::CRYPTO_CONTEXT );
-
-				if ( '' === $pending ) {
-					$pending   = self::new_secret();
-					$encrypted = Crypto::encrypt( $pending, Settings::CRYPTO_CONTEXT );
-
-					if ( ! is_wp_error( $encrypted ) ) {
-						update_user_meta( $user_id, self::PENDING_META, $encrypted );
-					}
+				if ( ! is_wp_error( $encrypted ) ) {
+					update_user_meta( $user_id, self::PENDING_META, $encrypted );
 				}
+			}
 
-				try {
-					$qr = QrCode::svg( self::otpauth_uri( $user, $pending ), __( 'QR code to scan with your authenticator app', 'dovetail-studio' ), 4 );
-				} catch ( \InvalidArgumentException $e ) {
-					$qr = '';
-				}
-				?>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Set up', 'dovetail-studio' ); ?></th>
-					<td>
-						<p><?php esc_html_e( 'Scan this QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…), then type the 6-digit code it shows and update your profile.', 'dovetail-studio' ); ?></p>
-						<?php if ( '' !== $qr ) : ?>
-							<p><?php echo $qr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built by QrCode from escaped parts. ?></p>
-						<?php endif; ?>
-						<p>
-							<?php esc_html_e( 'Or enter this key in the app:', 'dovetail-studio' ); ?>
-							<code><?php echo esc_html( implode( ' ', str_split( $pending, 4 ) ) ); ?></code>
-						</p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="dovetail-lg-setup-code"><?php esc_html_e( 'Code from the app', 'dovetail-studio' ); ?></label></th>
-					<td>
-						<input type="text" id="dovetail-lg-setup-code" name="dovetail_lg_setup_code" class="regular-text" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]*" aria-describedby="dovetail-lg-setup-help">
-						<p class="description" id="dovetail-lg-setup-help">
-						<?php
-						$deadline = self::deadline( $user );
+			try {
+				$qr = QrCode::svg( self::otpauth_uri( $user, $pending ), __( 'QR code to scan with your authenticator app', 'dovetail-studio' ), 4 );
+			} catch ( \InvalidArgumentException $e ) {
+				$qr = '';
+			}
+		}
 
-						echo esc_html(
-							$deadline
-								/* translators: %s: date. */
-								? sprintf( __( 'Required for your role. Set it up before %s.', 'dovetail-studio' ), wp_date( get_option( 'date_format', 'Y-m-d' ), $deadline ) )
-								: __( 'Optional. Leave empty to keep signing in with your password only.', 'dovetail-studio' )
-						);
-						?>
-						</p>
-					</td>
-				</tr>
-			<?php endif; ?>
-		</table>
-		<?php
+		View::render(
+			dirname( __DIR__ ),
+			'two-factor-profile',
+			array(
+				'own'           => $own,
+				'active'        => $active,
+				'mode'          => $mode,
+				'codes'         => $own ? $this->take_fresh_codes( $user_id ) : array(),
+				'recovery_left' => $active ? self::recovery_left( $user_id ) : 0,
+				'can_reset'     => current_user_can( 'edit_user', $user_id ),
+				'pending'       => $pending,
+				'qr'            => $qr,
+				'deadline'      => ! $active && $own ? self::deadline( $user ) : 0,
+				'date_format'   => (string) get_option( 'date_format', 'Y-m-d' ),
+			)
+		);
 	}
 
 	/**
@@ -881,6 +789,7 @@ final class TwoFactor {
 
 			return;
 		}
+
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( '' === $code ) {

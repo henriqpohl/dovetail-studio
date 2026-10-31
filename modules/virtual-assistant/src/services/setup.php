@@ -183,34 +183,15 @@ function dt_va_setup_process_request() {
 }
 
 function dt_va_setup_review_controls( $section ) {
-	$state = dt_va_setup_state( $section );
-	echo '<h3>' . esc_html__( 'Company setup review', 'dovetail-studio' ) . '</h3>';
-
-	if ( ! empty( $GLOBALS['dt_va_setup_review_error'] ) ) {
-		echo '<p role="alert">' . esc_html( $GLOBALS['dt_va_setup_review_error'] ) . '</p>';
-	}
-
-	if ( $state['reviewed'] ) {
-		echo '<p>'
-			. esc_html__( 'Reviewed for the current configuration. Saving changes or restoring defaults requires a new review.', 'dovetail-studio' )
-			. '</p>';
-
-		return;
-	}
-
-	if ( ! $state['eligible'] ) {
-		echo '<p>' . esc_html( $state['reason'] ) . '</p>';
-
-		return;
-	}
-
-	echo '<p>'
-		. esc_html__( 'Save any edits first. This confirmation applies to the currently saved configuration, not unsaved editor changes.', 'dovetail-studio' )
-		. '</p><form method="post">';
-	wp_nonce_field( 'dt_va_setup_review' );
-	echo '<input type="hidden" name="setup_hash" value="'
-		. esc_html( $state['hash'] ) . '"><button class="button" name="dt_va_setup_review" value="'
-		. esc_html( $section ) . '">' . esc_html( $state['button'] ) . '</button></form>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/setup-review',
+		array(
+			'section' => $section,
+			'state'   => dt_va_setup_state( $section ),
+			'error'   => $GLOBALS['dt_va_setup_review_error'] ?? '',
+		)
+	);
 }
 
 function dt_va_setup_notice() {
@@ -228,17 +209,14 @@ function dt_va_setup_notice() {
 
 	foreach ( dt_va_setup_sections() as $id => $section ) {
 		if ( ! dt_va_setup_state( $id )['reviewed'] ) {
-			$links[] = '<a href="'
-				. esc_url( admin_url( 'admin.php?page=dt-va-settings&tab=' . $section[1] ) ) . '">'
-				. esc_html( $section[0] ) . '</a>';
+			$links[] = array(
+				'url'   => admin_url( 'admin.php?page=dt-va-settings&tab=' . $section[1] ),
+				'title' => $section[0],
+			);
 		}
 	}
 
 	if ( $links ) {
-		echo '<div class="notice dovetail-notice inline notice-warning"><p><strong>'
-			. esc_html__( 'DT AI Assistant:', 'dovetail-studio' ) . '</strong> '
-			. esc_html__( 'company setup needs review:', 'dovetail-studio' ) . ' ' . wp_kses_post( implode( ', ', $links ) )
-			. esc_html__( '. Configure and review these sections, or explicitly accept an available default option. This reminder does not block the assistant.', 'dovetail-studio' )
-			. '</p></div>';
+		\DovetailStudio\Core\View::render( DOVETAIL_VIRTUAL_ASSISTANT_PATH, 'partials/setup-notice', array( 'links' => $links ) );
 	}
 }

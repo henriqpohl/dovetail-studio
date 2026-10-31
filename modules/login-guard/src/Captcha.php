@@ -9,6 +9,7 @@ namespace DovetailStudio\LoginGuard;
 
 use DovetailStudio\Core\Captcha as CoreCaptcha;
 use DovetailStudio\Core\Http;
+use DovetailStudio\Core\View;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -110,18 +111,22 @@ final class Captcha {
 
 		wp_enqueue_script( self::PROVIDER_HANDLE, CoreCaptcha::script_url( $provider, $site_key ), array(), null, true ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Provider script, versioned by the provider.
 
-		if ( 'turnstile' === $provider ) {
-			// Turnstile renders itself into this element and adds the cf-turnstile-response field.
-			echo '<div class="cf-turnstile" data-sitekey="' . esc_attr( $site_key ) . '" data-action="' . esc_attr( $action ) . '" data-size="flexible"></div>';
+		// reCAPTCHA v3 has no widget: assets/js/recaptcha.js fills the field with a token.
+		if ( 'turnstile' !== $provider ) {
+			$asset = \DovetailStudio\Core\Loader::asset( dirname( __DIR__ ), 'assets/js/recaptcha.js' );
 
-			return;
+			wp_enqueue_script( self::SCRIPT_HANDLE, $asset['url'], array( self::PROVIDER_HANDLE ), $asset['ver'], true );
 		}
 
-		// reCAPTCHA v3 has no widget: assets/js/recaptcha.js fills this field with a token.
-		$asset = \DovetailStudio\Core\Loader::asset( dirname( __DIR__ ), 'assets/js/recaptcha.js' );
-
-		wp_enqueue_script( self::SCRIPT_HANDLE, $asset['url'], array( self::PROVIDER_HANDLE ), $asset['ver'], true );
-		echo '<input type="hidden" name="g-recaptcha-response" value="" data-dovetail-lg-recaptcha="' . esc_attr( $action ) . '" data-sitekey="' . esc_attr( $site_key ) . '">';
+		View::render(
+			dirname( __DIR__ ),
+			'captcha-field',
+			array(
+				'provider' => $provider,
+				'site_key' => $site_key,
+				'action'   => $action,
+			)
+		);
 	}
 
 	/**

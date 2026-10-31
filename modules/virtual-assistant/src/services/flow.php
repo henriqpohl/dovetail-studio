@@ -558,78 +558,19 @@ function dt_va_flow_steps_settings() {
 		);
 	}
 
-	echo '<h3>'
-		. esc_html__( 'Add a step', 'dovetail-studio' ) . '</h3><p class="description">'
-		. wp_kses_post(
-			__( 'Adds one step without hand-editing JSON. <code>next</code> here only accepts a plain step id (no branching); use the JSON below for a branch. <code>options</code> is comma-separated and only used when Type is "choice".', 'dovetail-studio' )
-		) . '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_flow_add_step' );
-	echo '<input type="hidden" name="dt_va_flow_add_step" value="1"><table class="form-table">';
-	echo '<tr><th><label for="dt-va-step-id">'
-		. esc_html__( 'Step id', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-id" name="add_id" placeholder="'
-		. esc_attr__( 'e.g. web1', 'dovetail-studio' ) . '" required><p class="description">'
-		. wp_kses_post(
-			__( 'The first step of a flow is named after its door\'s Service + <code>1</code> (Service <code>web</code> → <code>web1</code>); the next steps can have any name. The order is set only by each step\'s Next step id.', 'dovetail-studio' )
-		) . '</p></td></tr>';
-	echo '<tr><th><label for="dt-va-step-type">'
-		. esc_html__( 'Type', 'dovetail-studio' )
-		. '</label></th><td><select id="dt-va-step-type" name="add_type"><option value="choice">choice</option><option value="text">text</option></select></td></tr>';
-	echo '<tr><th><label for="dt-va-step-question">'
-		. esc_html__( 'Question', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-question" name="add_question" required></td></tr>';
-	echo '<tr><th><label for="dt-va-step-example">'
-		. esc_html__( 'Example (optional)', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-example" name="add_example"></td></tr>';
-	echo '<tr><th><label for="dt-va-step-answerkey">'
-		. esc_html__( 'Answer key', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-answerkey" name="add_answerkey" placeholder="'
-		. esc_attr__( 'e.g. site_type', 'dovetail-studio' ) . '" required></td></tr>';
-	echo '<tr><th><label for="dt-va-step-options">'
-		. esc_html__( 'Options', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-options" name="add_options" placeholder="'
-		. esc_attr__( 'Comma-separated, e.g. Brochure site, Online shop, Landing page', 'dovetail-studio' )
-		. '"></td></tr>';
-	echo '<tr><th><label for="dt-va-step-next">'
-		. esc_html__( 'Next step id', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-step-next" name="add_next" placeholder="'
-		. esc_attr__( 'e.g. web2', 'dovetail-studio' ) . '" required></td></tr>';
-	echo '</table><p><button class="button">'
-		. esc_html__( 'Add step', 'dovetail-studio' ) . '</button></p></form><hr>';
 	$saved = dt_va_flow_steps_config();
-	$v     = $saved ? $saved : dt_va_flow_steps_starter();
-	echo '<h2>'
-		. esc_html__( 'Step questions', 'dovetail-studio' ) . '</h2><p>'
-		. wp_kses_post(
-			__( 'The questions asked after a door is picked, keyed by step id. Each step needs a <code>type</code> (<code>choice</code> or <code>text</code>), a <code>question</code>, an <code>answerKey</code> (where the answer is stored) and a <code>next</code> step id. <code>choice</code> also needs 1–8 <code>options</code>.', 'dovetail-studio' )
-		) . '</p>';
-	echo '<p class="description">'
-		. esc_html__( 'A step id you don\'t redefine here keeps its built-in question and behaviour, so you can override just one step at a time. Step ids already used by the assistant:', 'dovetail-studio' )
-		. ' <code>' . esc_html( implode( ', ', dt_va_flow_builtin_step_ids() ) ) . '</code>'
-		. wp_kses_post(
-			__( '. <code>next</code> can target any of those even if you never define them here — the fixed pipeline (<code>work</code>/<code>money</code>/<code>timing</code>/<code>capture</code>) always collects the budget, timing and contact details itself and cannot be redefined, only referenced.', 'dovetail-studio' )
-		) . '</p>';
-	echo '<p class="description">'
-		. wp_kses_post(
-			__( 'Branch instead of a plain <code>next</code> id: <code>{"if": {"key": "site_type", "answerEquals": "Online shop"}, "then": "shop1", "else": "web2"}</code>. Condition keys:', 'dovetail-studio' )
-		) . ' <code>' . esc_html( implode( ', ', dt_va_flow_condition_ops() ) ) . '</code>.</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_flow_steps' );
-	echo '<input type="hidden" name="dt_va_flow_steps" value="1">';
-	echo '<textarea name="flow_steps" rows="24" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px">'
-		. esc_textarea( wp_json_encode( $v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ) . '</textarea>';
-	echo '<p class="description">'
-		. ( $saved ? esc_html( sprintf( /* translators: %d: number of steps. */ _n( 'Using the saved steps (%d).', 'Using the saved steps (%d).', count( $saved ), 'dovetail-studio' ), count( $saved ) ) ) : esc_html__( 'Using the built-in steps; the text above is only a starting example.', 'dovetail-studio' ) )
-		. '</p>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save step questions', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_default" value="1" formnovalidate>'
-		. esc_html__( 'Restore default', 'dovetail-studio' ) . '</button>';
-	dt_va_json_tools( 'flow_steps' );
-	echo '</p><p class="description">'
-		. esc_html__( 'Import validates a JSON file and fills this editor; click Save to apply it. Export downloads the validated editor content, including unsaved edits. Download a Sample provides a template for this format.', 'dovetail-studio' )
-		. '</p></form>';
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/flow-steps',
+		array(
+			'saved'      => $saved,
+			'json'       => (string) wp_json_encode( $saved ? $saved : dt_va_flow_steps_starter(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
+			'builtin'    => dt_va_flow_builtin_step_ids(),
+			'conditions' => dt_va_flow_condition_ops(),
+			'json_tools' => dt_va_json_tools_args( 'flow_steps' ),
+		)
+	);
 }
 
 function dt_va_flow_settings_process() {
@@ -724,81 +665,27 @@ function dt_va_flow_settings() {
 		);
 	}
 
-	echo '<h3>'
-		. esc_html__( 'Add a door', 'dovetail-studio' ) . '</h3><p class="description">'
-		. esc_html__( 'Adds one door without hand-editing JSON. Service is only used when Action is "service".', 'dovetail-studio' )
-		. '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_flow_add_door' );
-	echo '<input type="hidden" name="dt_va_flow_add_door" value="1"><table class="form-table">';
-	echo '<tr><th><label for="dt-va-door-id">'
-		. esc_html__( 'Id', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-door-id" name="add_id" required></td></tr>';
-	echo '<tr><th><label for="dt-va-door-label">'
-		. esc_html__( 'Label', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-door-label" name="add_label" required></td></tr>';
-	echo '<tr><th><label for="dt-va-door-action">'
-		. esc_html__( 'Action', 'dovetail-studio' )
-		. '</label></th><td><select id="dt-va-door-action" name="add_action"><option value="service">service</option><option value="other">other</option><option value="human">human</option></select></td></tr>';
-	$step_ids = array_values(
-		array_unique( array_merge( array_keys( dt_va_flow_steps_config() ), array( 'enquiry1', 'client1' ) ) )
-	);
-	echo '<tr><th><label for="dt-va-door-service">' . esc_html__( 'Service', 'dovetail-studio' ) . '</label></th><td><input class="regular-text" id="dt-va-door-service" name="add_service" placeholder="' . esc_attr__( 'e.g. web', 'dovetail-studio' ) . '" aria-describedby="dt-va-door-step-hint">'
-		. '<p class="description" id="dt-va-door-step-hint" aria-live="polite">'
-			. wp_kses_post(
-				__( 'The door opens the step named Service + <code>1</code>: Service <code>web</code> opens the step <code>web1</code>.', 'dovetail-studio' )
-			) . '</p></td></tr>';
-	// Live hint: which step this door will open, and whether it exists yet.
-	$hint = array(
-		'steps'   => $step_ids,
-		/* translators: %s: step id, e.g. web1. */
-		'opens'   => __( 'This door opens the step %s.', 'dovetail-studio' ),
-		'exists'  => __( 'It exists in Step questions.', 'dovetail-studio' ),
-		'missing' => __( 'Add it in Step questions (Doors tab, below), or picking this door restarts the assistant.', 'dovetail-studio' ),
-	);
-	echo '<script>(function(){var h='
-		. wp_json_encode( $hint )
-		. ',i=document.getElementById("dt-va-door-service"),a=document.getElementById("dt-va-door-action"),p=document.getElementById("dt-va-door-step-hint"),d=p.innerHTML;function u(){var v=(i.value||"").trim().toLowerCase();if(a.value!=="service"||!v){p.innerHTML=d;return;}var s=v+"1",c=document.createElement("code");c.textContent=s;p.textContent="";var t=h.opens.split("%s");p.appendChild(document.createTextNode(t[0]));p.appendChild(c);p.appendChild(document.createTextNode((t[1]||"")+" "+(h.steps.indexOf(s)>-1?h.exists:h.missing)));}i.addEventListener("input",u);a.addEventListener("change",u);u();})();</script>';
-	echo '<tr><th><label for="dt-va-door-sub">'
-		. esc_html__( 'Sub (optional)', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-door-sub" name="add_sub"></td></tr>';
-	echo '<tr><th><label for="dt-va-door-short">'
-		. esc_html__( 'Short (optional)', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-door-short" name="add_short"></td></tr>';
-	echo '<tr><th><label for="dt-va-door-icon">'
-		. esc_html__( 'Icon (optional)', 'dovetail-studio' )
-		. '</label></th><td><select id="dt-va-door-icon" name="add_icon"><option value="">'
-		. esc_html__( '(default)', 'dovetail-studio' )
-		. '</option><option>logo</option><option>print</option><option>web</option><option>client</option><option>other</option><option>human</option></select></td></tr>';
-	echo '</table><p><button class="button">'
-		. esc_html__( 'Add door', 'dovetail-studio' ) . '</button></p></form><hr>';
 	$saved = dt_va_flow_doors_config();
-	$v     = $saved ? $saved : dt_va_flow_doors_default();
-	echo '<h2>'
-		. esc_html__( 'Doors (initial menu)', 'dovetail-studio' ) . '</h2><p>'
-		. wp_kses_post(
-			__( 'The buttons visitors see when the assistant opens. Each door needs an <code>id</code>, a <code>label</code> and an <code>action</code> (<code>service</code>, <code>other</code> or <code>human</code>); <code>service</code> doors also need a <code>service</code>: a lowercase id (letters, numbers, <code>-</code> or <code>_</code>) of your choosing, for example <code>web</code> or <code>seo</code> — use whatever names fit this installation\'s services. Optional: <code>sub</code>, <code>short</code>, <code>icon</code> (<code>logo</code>, <code>print</code>, <code>web</code>, <code>client</code>, <code>other</code> or <code>human</code>; any other value falls back to a generic icon).', 'dovetail-studio' )
-		) . '</p>';
-	echo '<p class="description">'
-		. wp_kses_post(
-			__( 'A custom <code>service</code> needs a matching step id (<code>service</code> + <code>"1"</code>, e.g. <code>web1</code>) defined below in Step questions — otherwise picking that door just restarts the assistant.', 'dovetail-studio' )
-		) . '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_flow' );
-	echo '<input type="hidden" name="dt_va_flow" value="1">';
-	echo '<textarea name="flow_doors" rows="24" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px">'
-		. esc_textarea( wp_json_encode( $v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ) . '</textarea>';
-	echo '<p class="description">'
-		. ( $saved ? esc_html__( 'Using the saved doors.', 'dovetail-studio' ) : esc_html__( 'Using the default doors.', 'dovetail-studio' ) )
-		. '</p>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save doors', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_default" value="1" formnovalidate>'
-		. esc_html__( 'Restore default', 'dovetail-studio' ) . '</button>';
-	dt_va_json_tools( 'flow_doors' );
-	echo '</p><p class="description">'
-		. esc_html__( 'Import validates a JSON file and fills this editor; click Save to apply it. Export downloads the validated editor content, including unsaved edits. Download a Sample provides a template for this format.', 'dovetail-studio' )
-		. '</p></form><hr>';
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-doors',
+		array(
+			'saved'      => $saved,
+			'json'       => (string) wp_json_encode( $saved ? $saved : dt_va_flow_doors_default(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
+			// Live hint: which step this door will open, and whether it exists yet.
+			'hint'       => array(
+				'steps'   => array_values(
+					array_unique( array_merge( array_keys( dt_va_flow_steps_config() ), array( 'enquiry1', 'client1' ) ) )
+				),
+				/* translators: %s: step id, e.g. web1. */
+				'opens'   => __( 'This door opens the step %s.', 'dovetail-studio' ),
+				'exists'  => __( 'It exists in Step questions.', 'dovetail-studio' ),
+				'missing' => __( 'Add it in Step questions (Doors tab, below), or picking this door restarts the assistant.', 'dovetail-studio' ),
+			),
+			'json_tools' => dt_va_json_tools_args( 'flow_doors' ),
+		)
+	);
 	dt_va_flow_steps_settings();
 	dt_va_setup_review_controls( 'doors' );
 }

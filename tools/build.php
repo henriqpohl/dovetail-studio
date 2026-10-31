@@ -45,6 +45,9 @@ $files = array(
 	'modules/virtual-assistant/assets/css/front.css'      => 'css',
 	'modules/virtual-assistant/assets/css/front-tab.css'  => 'css',
 	'modules/login-guard/assets/js/recaptcha.js'          => 'js',
+	'assets/admin/dovetail-admin.js'                      => 'js',
+	'modules/virtual-assistant/assets/js/admin-json.js'   => 'js',
+	'modules/virtual-assistant/assets/js/admin-doors.js'  => 'js',
 );
 
 foreach ( $files as $relative => $type ) {

@@ -78,14 +78,8 @@
 				<element value="try"/>
 			</property>
 		</properties>
-		<!-- Files with HTML templates: the sniff would turn "<?php if ( x ) : ?>" into four lines. -->
-		<exclude-pattern>/src/Core/Loader.php</exclude-pattern>
-		<exclude-pattern>/modules/schema-seo/src/Admin.php</exclude-pattern>
-		<exclude-pattern>/modules/schema-seo-woocommerce/src/functions.php</exclude-pattern>
-		<exclude-pattern>/modules/newsletter/src/functions.php</exclude-pattern>
-		<exclude-pattern>/modules/login-guard/src/Admin.php</exclude-pattern>
-		<exclude-pattern>/modules/login-guard/src/TwoFactor.php</exclude-pattern>
-		<exclude-pattern>/modules/vulnerability-watch/src/Admin.php</exclude-pattern>
+		<!-- Templates in views/: the sniff would turn "<?php if ( x ) : ?>" into four lines. -->
+		<exclude-pattern>*/views/*</exclude-pattern>
 	</rule>
 	<rule ref="SlevomatCodingStandard.ControlStructures.JumpStatementsSpacing">
 		<properties>
@@ -95,6 +89,14 @@
 			<property name="linesCountAfterLast" value="0"/>
 			<property name="allowSingleLineYieldStacking" value="true"/>
 		</properties>
+	</rule>
+
+	<!--
+	Templates in views/ are included by Core\View inside a function, so their variables
+	(loop values, $args) are local, not globals.
+	-->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound">
+		<exclude-pattern>*/views/*</exclude-pattern>
 	</rule>
 
 	<!-- PHP versions the plugin supports (Requires PHP: 8.0). -->

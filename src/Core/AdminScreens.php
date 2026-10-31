@@ -81,7 +81,7 @@ final class AdminScreens {
 		$this->pages      = array_values( array_unique( $this->pages ) );
 		$this->post_types = array_values( array_unique( $this->post_types ) );
 
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_styles' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_head', array( $this, 'clear_notices' ), PHP_INT_MAX );
 		add_filter( 'admin_body_class', array( $this, 'body_class' ) );
 	}
@@ -126,17 +126,29 @@ final class AdminScreens {
 		return $is;
 	}
 
-	/** Load the shared Dovetail admin design system. */
-	public function enqueue_styles() {
+	/** Load the shared Dovetail admin design system and its small shared script. */
+	public function enqueue_assets() {
 		if ( ! $this->is_current() ) {
 			return;
 		}
+
+		$script = Loader::asset( DOVETAIL_STUDIO_PATH, 'assets/admin/dovetail-admin.js' );
 
 		wp_enqueue_style(
 			'dovetail-studio-admin',
 			DOVETAIL_STUDIO_URL . 'assets/admin/dovetail-admin.css',
 			array(),
 			DOVETAIL_STUDIO_VERSION
+		);
+		wp_enqueue_script(
+			'dovetail-studio-admin',
+			$script['url'],
+			array(),
+			$script['ver'],
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 	}
 
@@ -183,8 +195,15 @@ final class AdminScreens {
 	 * @param bool   $dismissible Whether it can be dismissed.
 	 */
 	public static function notice( $type, $message, $dismissible = false ) {
-		$type = in_array( $type, array( 'success', 'error', 'warning', 'info' ), true ) ? $type : 'info';
-		echo '<div class="notice notice-' . esc_attr( $type ) . ' dovetail-notice inline' . ( $dismissible ? ' is-dismissible' : '' ) . '"><p>' . $message . '</p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by the caller.
+		View::render(
+			__DIR__,
+			'notice',
+			array(
+				'type'        => in_array( $type, array( 'success', 'error', 'warning', 'info' ), true ) ? $type : 'info',
+				'message'     => $message,
+				'dismissible' => (bool) $dismissible,
+			)
+		);
 	}
 
 	/**

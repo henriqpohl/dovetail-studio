@@ -6,14 +6,14 @@ The Virtual Assistant provides its REST endpoints, knowledge base, enquiry workf
 
 ## Structure
 
-`src/Module.php` boots `src/runtime.php`. Service files are under `src/services/`, front-end/admin assets under `assets/`, markup under `views/`, and the bundled knowledge source under `resources/`. Extended technical notes remain under `docs/`.
+`src/Module.php` boots `src/runtime.php`. Service files are under `src/services/`, front-end/admin assets under `assets/`, markup under `views/` (`front.html` for the widget; the settings page, one template per tab, the company notes page and partials for the admin screens), and the bundled knowledge source under `resources/`. Extended technical notes remain under `docs/`.
 
 The Virtual Assistant keeps its own external **VA Enquiries** admin menu. Inside Dovetail Studio there is only one **Virtual Assistant** shortcut that redirects to its settings page.
 
 ## Possible Errors and How to Fix Them
 
 ### Assistant UI does not appear
-The assistant stays hidden until the required public fields — **Phone — display** and **Public email** — are set under **VA Enquiries → Settings → Company**. Until then a notice on the Studio screens, the Dashboard and the Plugins screen names the fields still missing. Then confirm the module is enabled and that `views/front.html`, `assets/css/front-tab.css`, `assets/css/front.css` and `assets/js/front.js` are readable. Clear page/cache optimiser caches.
+The assistant stays hidden until the required public fields — **Phone — display** and **Public email** — are set under **VA Enquiries → Settings → Company**. Until then a notice on the Studio screens, the Dashboard and the Plugins screen names the fields still missing. Then confirm the module is enabled and that `views/front.html`, `assets/css/front-tab.css`, `assets/css/front.css` and `assets/js/front.js` are readable. The loader settings (`window.DT_VA_LOADER`) are printed with `wp_add_inline_script()` just before `assets/js/front-loader.js` and marked `data-no-optimize`, `data-no-defer` and `data-cfasync="false"`; if an optimiser still delays them, exclude them from its JavaScript optimisation. Clear page/cache optimiser caches.
 
 ### AI answers fail
 Check the configured provider credentials and provider settings. Review REST responses from `/wp-json/dt-va/v1/ask`.

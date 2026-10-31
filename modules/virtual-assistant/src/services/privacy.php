@@ -228,22 +228,12 @@ function dt_va_privacy_settings() {
 		);
 	}
 
-	echo '<h2>'
-		. esc_html__( 'Privacy', 'dovetail-studio' ) . '</h2><p>'
-		. esc_html__( 'Enquiries hold personal data. They appear in Tools > Export Personal Data and Tools > Erase Personal Data, deleting an enquiry also deletes its attachment, and a suggested text is added to Settings > Privacy for your privacy policy.', 'dovetail-studio' )
-		. '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_privacy' );
-	echo '<input type="hidden" name="dt_va_privacy" value="1"><table class="form-table">';
-	echo '<tr><th><label for="dt-va-retention">'
-		. esc_html__( 'Keep enquiries for', 'dovetail-studio' )
-		. '</label></th><td><input type="number" min="0" max="120" id="dt-va-retention" name="retention_months" value="'
-		. esc_attr( dt_va_retention_months() ) . '"' . ( $external ? ' readonly' : '' ) . '> '
-		. esc_html__( 'months', 'dovetail-studio' );
-	echo '<p class="description">'
-		. ( $external ? esc_html__( 'Defined by', 'dovetail-studio' ) . ' DT_VA_RETENTION_MONTHS ' . esc_html__( 'in wp-config.php. Edit it there, or remove the definition to use this field.', 'dovetail-studio' ) : esc_html__( 'Older enquiries and their attachments are deleted every day. 0 keeps them until you delete them.', 'dovetail-studio' ) )
-		. '</p></td></tr>';
-	echo '</table>'
-		. ( $external ? '' : '<p><button class="button button-primary">' . esc_html__( 'Save privacy settings', 'dovetail-studio' ) . '</button></p>' )
-		. '</form>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/privacy-settings',
+		array(
+			'external' => $external,
+			'months'   => dt_va_retention_months(),
+		)
+	);
 }

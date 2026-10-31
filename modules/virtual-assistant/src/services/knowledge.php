@@ -63,22 +63,14 @@ function dt_va_knowledge_settings() {
 	}
 
 	$override = dt_va_knowledge_override();
-	echo '<h2>'
-		. esc_html__( 'Knowledge base', 'dovetail-studio' ) . '</h2><p>'
-		. wp_kses_post(
-			__( 'The only facts the AI Assistant is allowed to answer questions from. Customize it for this installation here; until saved, the assistant uses the bundled <code>knowledge.md</code>. Restore default clears this override and goes back to <code>knowledge.md</code>.', 'dovetail-studio' )
-		) . '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_knowledge' );
-	echo '<input type="hidden" name="dt_va_knowledge" value="1">';
-	echo '<textarea name="knowledge_text" rows="30" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px">'
-		. esc_textarea( '' !== $override ? $override : dt_va_knowledge_base_default() ) . '</textarea>';
-	echo '<p class="description">'
-		. ( '' !== $override ? esc_html__( 'Using the saved override.', 'dovetail-studio' ) : esc_html__( 'Using the default from knowledge.md.', 'dovetail-studio' ) )
-		. '</p>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save knowledge base', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_default" value="1" formnovalidate>'
-		. esc_html__( 'Restore default', 'dovetail-studio' ) . '</button></p></form>';
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-knowledge',
+		array(
+			'override' => $override,
+			'text'     => '' !== $override ? $override : dt_va_knowledge_base_default(),
+		)
+	);
 	dt_va_setup_review_controls( 'knowledge' );
 }

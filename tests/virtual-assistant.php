@@ -15,14 +15,21 @@ t('cron events scheduled', isset($GLOBALS['__cron']['dt_va_selfcheck'], $GLOBALS
 t('enquiry email defaults to admin_email', dt_va_company_value('to') === 'admin@example.com');
 
 // ---------------------------------------------------------------- front end
+$GLOBALS['__inline'] = array();
 $html = capture(function () { do_action('wp_enqueue_scripts'); do_action('wp_head'); do_action('wp_footer'); });
-t('hidden until phone and email are set', strpos($html, 'DT_VA_LOADER') === false && strpos($html, 'dt-va-tab') === false);
+t('hidden until phone and email are set', empty($GLOBALS['__inline']['dt-va-loader']) && strpos($html, 'dt-va-tab') === false);
 t('config endpoint off until configured', req('/dt-va/v1/config')->status === 404);
 update_option('dt_va_public', array('COMPANY_PHONE_DISPLAY' => '01 234 5678', 'COMPANY_EMAIL' => 'hello@example.com'));
 $html = capture(function () { do_action('wp_enqueue_scripts'); do_action('wp_head'); do_action('wp_footer'); });
-t('page carries only the loader config', strpos($html, 'window.DT_VA_LOADER') !== false && strpos($html, 'DT_VA_SERVER') === false);
+$loader_js = implode('', $GLOBALS['__inline']['dt-va-loader'] ?? array());
+t('page carries only the loader config', strpos($loader_js, 'window.DT_VA_LOADER=') === 0 && strpos($html . $loader_js, 'DT_VA_SERVER') === false && strpos($html, '<script') === false);
+update_option('dt_va_theme', array('accent' => '#112233'));
+$GLOBALS['__inline_css'] = array(); do_action('wp_enqueue_scripts');
+$theme_css = implode('', $GLOBALS['__inline_css']['dt-va-tab'] ?? array());
+t('saved colours added after the tab stylesheet', strpos($theme_css, ':root{') === 0 && strpos($theme_css, '--dt-va-accent:#112233 !important;') !== false && strpos($theme_css, '<style') === false);
+delete_option('dt_va_theme');
 t('tab in the page, panel in an inert template', strpos($html, 'id="dt-va-tab"') !== false && strpos($html, '<template id="dt-va-panel-tpl"><section') !== false);
-t('only the small loader script is enqueued', in_array('dt-va-loader', $GLOBALS['__enq'], true) && preg_match('~"script":"[^"]*front(\.min)?\.js~', $html));
+t('only the small loader script is enqueued', in_array('dt-va-loader', $GLOBALS['__enq'], true) && preg_match('~"script":"[^"]*front(\.min)?\.js~', $loader_js));
 t('no studio-specific data in the output', stripos($html, 'design minds') === false && stripos($html, 'malahide') === false);
 $cfg = req('/dt-va/v1/config');
 t('config endpoint', $cfg->status === 200 && isset($cfg->data['token'], $cfg->data['hours']['timezone'], $cfg->data['i18n']));

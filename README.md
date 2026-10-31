@@ -130,9 +130,11 @@ Dovetail Studio also supports ZIP upload/update and removal of disabled modules.
 
 ## Shared admin UI
 
-All Dovetail admin screens use `assets/admin/dovetail-admin.css`. Module-specific CSS should only contain UI that cannot be expressed with the shared design system.
+All Dovetail admin screens use `assets/admin/dovetail-admin.css`. Module-specific CSS should only contain UI that cannot be expressed with the shared design system. Its design tokens, the `--dovetail-*` custom properties at the top of the file, are the only source of colours, shadows and font sizes: neutrals (`--dovetail-text`, `--dovetail-border`, `--dovetail-soft`…), primary, success, warning and danger, three shadows, interface sizes in `rem` (`--dovetail-font-xs` to `--dovetail-font-lg`) and fluid titles (`--dovetail-font-title`, `--dovetail-font-display`, 375px to 1200px wide). `tests/core.php` fails on a colour or `px` font size written outside them; shared classes cover code editors (`dovetail-code-editor`), required fields (`dovetail-required`, `dovetail-field-missing`), status text (`dovetail-text-success`, `dovetail-text-danger`), inline checkboxes (`dovetail-inline-check`) and SVG charts (`dovetail-chart`).
 
-`DovetailStudio\Core\AdminScreens` decides which screens belong to the Studio: the Dashboard, Modules and every screen an enabled module declares in its manifest (`'admin_screens' => array( 'pages' => array( … ), 'post_types' => array( … ) )`). On those screens it loads the shared CSS and removes every WordPress and third-party admin notice, update and security nags included; they still show everywhere else in WP Admin. Studio and module messages use `AdminScreens::notice()`, `AdminScreens::settings_errors()` or the `dovetail_studio_notices` action, so they stay visible.
+`assets/admin/dovetail-admin.js` is loaded on the same screens: a link or button with `data-dovetail-confirm="Message"` asks for confirmation before it runs.
+
+`DovetailStudio\Core\AdminScreens` decides which screens belong to the Studio: the Dashboard, Modules and every screen an enabled module declares in its manifest (`'admin_screens' => array( 'pages' => array( … ), 'post_types' => array( … ) )`). On those screens it loads the shared CSS and script and removes every WordPress and third-party admin notice, update and security nags included; they still show everywhere else in WP Admin. Studio and module messages use `AdminScreens::notice()`, `AdminScreens::settings_errors()` or the `dovetail_studio_notices` action, so they stay visible.
 
 ## Translations
 
@@ -155,7 +157,10 @@ Confirm it is enabled and that `module.php` points to `src/Module.php` with the 
 Ensure the ZIP contains one module root with `module.php`, `README.md`, `USAGE.md`, and `src/Module.php`, and that the manifest `bootstrap` stays inside that module directory.
 
 ### A module page has missing styles
-Confirm `assets/admin/dovetail-admin.css` exists and that the page slug is included by the loader admin asset logic.
+Confirm `assets/admin/dovetail-admin.css` exists and that the page slug or post type is declared in the module's `admin_screens`.
+
+### A confirmation does not appear before removing a module
+Confirm `assets/admin/dovetail-admin.js` is readable and loads on the screen (it is part of the shared admin assets), and that the link carries `data-dovetail-confirm`.
 
 ### WordPress reports a PHP fatal error after an update
 Restore the previous module package, run `php -l` against every PHP file, and verify namespace/class names exactly match the manifest.

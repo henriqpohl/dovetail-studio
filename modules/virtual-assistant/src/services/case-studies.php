@@ -227,60 +227,19 @@ function dt_va_case_studies_settings() {
 		);
 	}
 
-	echo '<h3>'
-		. esc_html__( 'Add an entry', 'dovetail-studio' ) . '</h3><p class="description">'
-		. esc_html__( 'Add a real project. Keywords are space-separated plain words (no regex). Example projects are never added automatically.', 'dovetail-studio' )
-		. '</p><form method="post">';
-	wp_nonce_field( 'dt_va_case_studies_add' );
-	echo '<input type="hidden" name="dt_va_case_studies_add" value="1"><table class="form-table">';
-
-	foreach ( array(
-		't'   => __( 'Title', 'dovetail-studio' ),
-		's'   => __( 'Description', 'dovetail-studio' ),
-		'o'   => __( 'Outcome', 'dovetail-studio' ),
-		'url' => __( 'Project URL', 'dovetail-studio' ),
-		'img' => __( 'Image URL (http/https)', 'dovetail-studio' ),
-		'sec' => __( 'Sector', 'dovetail-studio' ),
-		'ind' => __( 'Industry keywords', 'dovetail-studio' ),
-	) as $key => $label ) {
-		echo '<tr><th><label for="dt-va-case-'
-			. esc_attr( $key ) . '">' . esc_html( $label )
-			. '</label></th><td><input class="regular-text" id="dt-va-case-' . esc_attr( $key )
-			. '" name="add_' . esc_attr( $key ) . '"'
-			. ( in_array( $key, array( 't', 's' ), true ) ? ' required' : '' ) . '></td></tr>';
-	}
-
-	echo '</table><p><button class="button">'
-		. esc_html__( 'Add entry', 'dovetail-studio' ) . '</button></p></form><hr>';
 	$saved = dt_va_case_studies_config();
-	echo '<h2>'
-		. esc_html__( 'Portfolio', 'dovetail-studio' ) . '</h2><p>'
-		. wp_kses_post(
-			__( 'Provide 1–30 projects with a title (<code>t</code>, max 60 characters) and description (<code>s</code>, max 140). Optional fields: outcome (<code>o</code>, max 80), project URL (<code>url</code>, http(s) or /path), image (<code>img</code>, http(s) only), sector (<code>sec</code>, max 60) and plain industry keywords (<code>ind</code>, max 200). Matching projects appear first, followed by other saved projects, up to three cards.', 'dovetail-studio' )
-		) . '</p><p>'
-		. esc_html__( 'Saving replaces the built-in portfolio entirely. Restore default removes the override; the default portfolio is empty.', 'dovetail-studio' )
-		. '</p><form method="post">';
-	wp_nonce_field( 'dt_va_case_studies' );
-	echo '<input type="hidden" name="dt_va_case_studies" value="1">';
-	$value = $error && null !== $raw
-		? $raw
-		: ( $saved ? wp_json_encode( $saved, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) : '' );
-	echo '<textarea aria-label="'
-		. esc_attr__( 'Portfolio JSON', 'dovetail-studio' )
-		. '" name="case_studies_entries" rows="24" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px" placeholder="'
-		. esc_textarea(
-			wp_json_encode( dt_va_case_studies_starter(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES )
-		) . '">' . esc_textarea( $value ) . '</textarea>';
-	echo '<p class="description">'
-		. ( $saved ? esc_html( sprintf( /* translators: %d: number of entries. */ _n( 'Using the saved portfolio (%d entry).', 'Using the saved portfolio (%d entries).', count( $saved ), 'dovetail-studio' ), count( $saved ) ) ) : esc_html__( 'The placeholder is only a starting example, not your real portfolio. No projects are published by default.', 'dovetail-studio' ) )
-		. '</p>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save portfolio', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_default" value="1" formnovalidate>'
-		. esc_html__( 'Restore default', 'dovetail-studio' ) . '</button>';
-	dt_va_json_tools( 'case_studies_entries' );
-	echo '</p><p class="description">'
-		. esc_html__( 'Import validates a JSON file and fills this editor; click Save to apply it. Export downloads the validated editor content, including unsaved edits. Download a Sample provides a template for this format.', 'dovetail-studio' )
-		. '</p></form>';
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-portfolio',
+		array(
+			'saved'      => $saved,
+			'json'       => $error && null !== $raw
+				? $raw
+				: ( $saved ? (string) wp_json_encode( $saved, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) : '' ),
+			'starter'    => (string) wp_json_encode( dt_va_case_studies_starter(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
+			'json_tools' => dt_va_json_tools_args( 'case_studies_entries' ),
+		)
+	);
 	dt_va_setup_review_controls( 'portfolio' );
 }

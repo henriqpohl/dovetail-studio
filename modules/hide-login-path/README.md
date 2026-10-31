@@ -14,6 +14,7 @@ It hides the login from bots that scan for it; it does not replace brute force p
 | `src/Settings.php` | Defaults, path validation and sanitizing of `dovetail_hide_login_path_settings` |
 | `src/Router.php` | Request detection, redirects, loading `wp-login.php` at the login path, URL rewriting |
 | `src/Admin.php` | Dovetail Studio → Hide Login Path: status and settings |
+| `views/admin-page.php` | The admin screen markup |
 
 No scripts or styles: the admin screen uses the shared Studio design system.
 

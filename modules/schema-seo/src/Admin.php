@@ -7,6 +7,8 @@
 
 namespace DovetailStudio\SchemaSeo;
 
+use DovetailStudio\Core\View;
+
 defined( 'ABSPATH' ) || exit;
 
 final class Admin {
@@ -376,781 +378,77 @@ final class Admin {
 		}
 
 		$options         = Schema::get_options();
-		$yoast           = $this->get_recognized_yoast_values();
+		$yoast_active    = Schema::is_yoast_active();
 		$yoast_is_person = $this->yoast_represents_person();
-		?>
-		<div class="wrap dovetail-wrap">
-			<div class="dovetail-page-header">
-				<div>
-					<h1><?php esc_html_e( 'Schema SEO', 'dovetail-studio' ); ?></h1>
-					<p><?php esc_html_e( 'Manage business structured data and its integration with Yoast SEO.', 'dovetail-studio' ); ?></p>
-				</div>
-				<span class="dovetail-version"><?php echo esc_html( 'v' . DOVETAIL_SCHEMA_SEO_VERSION ); ?></span>
-			</div>
+		$missing         = ( new Schema() )->missing_required_fields();
 
-			<?php
-			\DovetailStudio\Core\AdminScreens::settings_errors();
-
-			$missing = ( new Schema() )->missing_required_fields();
-
-			if ( Schema::is_yoast_active() ) {
-				// With Yoast SEO the name comes from Yoast's Organization, and the Person mode is set in Yoast.
-				$missing = $yoast_is_person
-					? array()
-					: array_values(
-						array_diff(
-							$missing,
-							array( __( 'Name', 'dovetail-studio' ), __( 'Person name', 'dovetail-studio' ) )
-						)
-					);
-			}
-
-			if ( $missing && ! empty( $options['enabled'] ) ) {
-				\DovetailStudio\Core\AdminScreens::notice(
-					'warning',
-					esc_html(
-						sprintf(
-							/* translators: %s: comma-separated field names. */
-							__( 'Not published yet: fill in %s. Without a name no business entity is printed, and without an address LocalBusiness types are printed as Organization.', 'dovetail-studio' ),
-							implode( ', ', $missing )
-						)
+		if ( $yoast_active ) {
+			// With Yoast SEO the name comes from Yoast's Organization, and the Person mode is set in Yoast.
+			$missing = $yoast_is_person
+				? array()
+				: array_values(
+					array_diff(
+						$missing,
+						array( __( 'Name', 'dovetail-studio' ), __( 'Person name', 'dovetail-studio' ) )
 					)
 				);
-			}
-			?>
-
-			<?php $other_seo = \DovetailStudio\Core\Seo\Environment::other_seo_plugin(); ?>
-			<div class="dovetail-status <?php echo ( $yoast_is_person || '' !== $other_seo ) ? 'is-warning' : ( Schema::is_yoast_active() ? 'is-active' : 'is-native' ); ?>">
-				<span class="dovetail-status-dot" aria-hidden="true"></span>
-				<div>
-					<strong><?php esc_html_e( 'Integration status', 'dovetail-studio' ); ?></strong>
-					<p>
-						<?php if ( '' !== $other_seo && ! Schema::is_yoast_active() ) : ?>
-							<?php
-							/* translators: %s: SEO plugin name, e.g. Rank Math. */
-							echo esc_html( sprintf( __( '%s detected. It publishes the site schema, so this module prints no JSON-LD of its own and nothing is duplicated. The breadcrumb trail for the theme still works.', 'dovetail-studio' ), $other_seo ) );
-							?>
-						<?php elseif ( $yoast_is_person ) : ?>
-							<?php
-							esc_html_e( 'Yoast SEO represents this site as a Person. The Person will be preserved and a separate business entity will be added to the same graph.', 'dovetail-studio' );
-							?>
-						<?php elseif ( Schema::is_yoast_active() ) : ?>
-							<?php esc_html_e( 'Yoast SEO detected. The existing Organization entity will be enriched; no second entity is printed.', 'dovetail-studio' ); ?>
-						<?php else : ?>
-							<?php
-							esc_html_e( 'Yoast SEO not detected. The plugin prints a single JSON-LD graph in wp_head with the business entity, the site graph and the breadcrumb trail.', 'dovetail-studio' );
-							?>
-						<?php endif; ?>
-					</p>
-				</div>
-			</div>
-
-			<nav class="dovetail-section-nav" aria-label="<?php esc_attr_e( 'Settings sections', 'dovetail-studio' ); ?>">
-				<a href="#dovetail-general"><?php esc_html_e( 'General', 'dovetail-studio' ); ?></a>
-				<?php
-				if ( ! Schema::is_yoast_active() ) :
-					?>
-					<a href="#dovetail-person"><?php esc_html_e( 'Person', 'dovetail-studio' ); ?></a><?php endif; ?>
-				<a href="#dovetail-organization"><?php esc_html_e( 'Organization', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-contact"><?php esc_html_e( 'Contact', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-address"><?php esc_html_e( 'Address', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-business"><?php esc_html_e( 'Business', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-type-specific"><?php esc_html_e( 'Type-specific', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-profiles"><?php esc_html_e( 'Profiles', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-identifiers"><?php esc_html_e( 'Identifiers', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-site-graph"><?php esc_html_e( 'Site Graph & Breadcrumbs', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-json-preview"><?php esc_html_e( 'JSON-LD Preview', 'dovetail-studio' ); ?></a>
-				<a href="#dovetail-integration"><?php esc_html_e( 'Integration', 'dovetail-studio' ); ?></a>
-			</nav>
-
-			<form action="options.php" method="post">
-				<?php settings_fields( 'dovetail_schema_seo_group' ); ?>
-
-				<?php
-				$this->section_start(
-					__( 'General', 'dovetail-studio' ),
-					__( 'Output rules and what the site represents.', 'dovetail-studio' ),
-					'general'
-				);
-				$this->checkbox(
-					'enabled',
-					__( 'Enable integration', 'dovetail-studio' ),
-					$options['enabled'],
-					__( 'Generate Schema or enrich Yoast SEO output.', 'dovetail-studio' )
-				);
-				?>
-				<?php
-				$this->select(
-					'display_scope',
-					__( 'Display scope', 'dovetail-studio' ),
-					$options['display_scope'],
-					array(
-						'sitewide' => __( 'Entire site', 'dovetail-studio' ),
-						'homepage' => __( 'Homepage only', 'dovetail-studio' ),
-					)
-				);
-				?>
-				<?php if ( Schema::is_yoast_active() ) : ?>
-					<tr><th scope="row"><?php esc_html_e( 'This site represents', 'dovetail-studio' ); ?></th><td><p class="description"><?php echo $yoast_is_person ? esc_html__( 'A person, as set in Yoast SEO (Settings > Site representation). The business below is optional and is linked to that person.', 'dovetail-studio' ) : esc_html__( 'An organization, as set in Yoast SEO (Settings > Site representation).', 'dovetail-studio' ); ?></p></td></tr>
-				<?php else : ?>
-					<?php
-					$this->select(
-						'entity',
-						__( 'This site represents', 'dovetail-studio' ),
-						$options['entity'],
-						array(
-							'organization' => __( 'An organization or business', 'dovetail-studio' ),
-							'person'       => __( 'A person', 'dovetail-studio' ),
-						)
-					);
-					?>
-				<?php endif; ?>
-				<?php $this->section_end(); ?>
-
-				<?php if ( ! Schema::is_yoast_active() ) : ?>
-					<?php
-					$this->section_start(
-						__( 'Person', 'dovetail-studio' ),
-						__( 'Used when the site represents a person: a blog, portfolio or a professional working under their own name. The person becomes the publisher of the site. A business filled in below is optional and is linked to the person (founder / worksFor).', 'dovetail-studio' ),
-						'person'
-					);
-					$this->basic_input(
-						'person_name',
-						__( 'Person name', 'dovetail-studio' ),
-						$options['person_name']
-					);
-					$this->basic_input(
-						'person_job_title',
-						__( 'Job title', 'dovetail-studio' ),
-						$options['person_job_title'],
-						'text',
-						__( 'For example: Photographer, Dentist, Consultant.', 'dovetail-studio' )
-					);
-					$this->basic_textarea(
-						'person_description',
-						__( 'Description', 'dovetail-studio' ),
-						$options['person_description']
-					);
-					$this->media_field(
-						'person_image',
-						__( 'Photo', 'dovetail-studio' ),
-						$options,
-						array(),
-						false
-					);
-					$this->basic_textarea(
-						'person_same_as',
-						__( 'Profiles', 'dovetail-studio' ),
-						$options['person_same_as'],
-						__( 'One full URL per line: LinkedIn, Instagram, a personal website.', 'dovetail-studio' )
-					);
-					$this->section_end();
-					?>
-				<?php endif; ?>
-
-				<?php
-				$this->section_start(
-					__( 'Organization', 'dovetail-studio' ),
-					__( 'Identity and type of the organization or business. In Person mode, leave the name blank when there is no business.', 'dovetail-studio' ),
-					'organization'
-				);
-				$this->select(
-					'schema_type',
-					__( 'Business type', 'dovetail-studio' ),
-					$options['schema_type'],
-					self::schema_types()
-				);
-				$this->text( 'name', __( 'Business name', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text(
-					'alternate_name',
-					__( 'Alternate name', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true
-				);
-				$this->text( 'legal_name', __( 'Legal name', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text( 'slogan', __( 'Slogan', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text(
-					'number_of_employees',
-					__( 'Number of employees', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					'number'
-				);
-				$this->textarea(
-					'description',
-					__( 'Description', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true
-				);
-				$this->basic_input(
-					'founding_date',
-					__( 'Founding date', 'dovetail-studio' ),
-					$options['founding_date'],
-					'date'
-				);
-				$this->basic_textarea(
-					'founders',
-					__( 'Founders', 'dovetail-studio' ),
-					$options['founders'],
-					__( 'One per line as Name|URL. URL is optional.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'parent_organization_name',
-					__( 'Parent organization name', 'dovetail-studio' ),
-					$options['parent_organization_name']
-				);
-				$this->basic_input(
-					'parent_organization_url',
-					__( 'Parent organization URL', 'dovetail-studio' ),
-					$options['parent_organization_url'],
-					'url'
-				);
-				$this->text(
-					'url',
-					__( 'Website URL', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					'url',
-					__( 'Defaults to the WordPress home URL.', 'dovetail-studio' )
-				);
-				$this->media_field( 'logo', __( 'Logo', 'dovetail-studio' ), $options, $yoast );
-				$this->media_field( 'image', __( 'Business image', 'dovetail-studio' ), $options, $yoast );
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start( __( 'Contact', 'dovetail-studio' ), '', 'contact' );
-				$this->text(
-					'telephone',
-					__( 'Telephone', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					'tel'
-				);
-				$this->text( 'email', __( 'Email', 'dovetail-studio' ), $options, $yoast, true, 'email' );
-				$this->textarea(
-					'contact_points',
-					__( 'Contact points', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					__( 'One per line: Type|Telephone|Email|Languages|Areas. Example: customer service|+1 555 0100|help@example.com|en,es|United States.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start(
-					__( 'Address', 'dovetail-studio' ),
-					__( 'Address and coordinates come from this plugin.', 'dovetail-studio' ),
-					'address'
-				);
-				$this->basic_input(
-					'street_address',
-					__( 'Street address', 'dovetail-studio' ),
-					$options['street_address']
-				);
-				$this->basic_input(
-					'address_locality',
-					__( 'City / locality', 'dovetail-studio' ),
-					$options['address_locality']
-				);
-				$this->basic_input(
-					'address_region',
-					__( 'Region / county', 'dovetail-studio' ),
-					$options['address_region']
-				);
-				$this->basic_input(
-					'postal_code',
-					__( 'Postal code', 'dovetail-studio' ),
-					$options['postal_code']
-				);
-				$this->basic_input(
-					'address_country',
-					__( 'Country code', 'dovetail-studio' ),
-					$options['address_country'],
-					'text',
-					__( 'Two-letter ISO code, for example US.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'latitude',
-					__( 'Latitude', 'dovetail-studio' ),
-					$options['latitude'],
-					'number',
-					'',
-					'any'
-				);
-				$this->basic_input(
-					'longitude',
-					__( 'Longitude', 'dovetail-studio' ),
-					$options['longitude'],
-					'number',
-					'',
-					'any'
-				);
-				$this->basic_input(
-					'has_map',
-					__( 'Map URL', 'dovetail-studio' ),
-					$options['has_map'],
-					'url',
-					__( 'Public Google Maps or other map URL.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'locations',
-					__( 'Additional locations', 'dovetail-studio' ),
-					$options['locations'],
-					__( 'One per line: Name|Street|City|Region|Postal code|Country|Latitude|Longitude|Telephone|URL.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'location_hours',
-					__( 'Additional location hours', 'dovetail-studio' ),
-					$options['location_hours'],
-					__( 'One per line: Exact location name|Days|Opens|Closes. Example: Main Office|Monday,Tuesday|09:00|17:00.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start( __( 'Business', 'dovetail-studio' ), '', 'business' );
-				$this->basic_input(
-					'price_range',
-					__( 'Price range', 'dovetail-studio' ),
-					$options['price_range'],
-					'text',
-					__( 'Examples: $$, $20–$100.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'currencies_accepted',
-					__( 'Currencies accepted', 'dovetail-studio' ),
-					$options['currencies_accepted'],
-					'text',
-					__( 'ISO 4217 codes separated by commas, for example USD, EUR.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'payment_accepted',
-					__( 'Payment methods', 'dovetail-studio' ),
-					$options['payment_accepted'],
-					'text',
-					__( 'Comma-separated, for example Cash, Credit Card, Bank Transfer.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'area_served',
-					__( 'Areas served', 'dovetail-studio' ),
-					$options['area_served'],
-					__( 'One per line. Use Type|Name, for example Country|United States or AdministrativeArea|California.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'languages',
-					__( 'Languages', 'dovetail-studio' ),
-					$options['languages'],
-					__( 'Comma-separated BCP 47 codes, for example en, es, fr.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'services',
-					__( 'Services', 'dovetail-studio' ),
-					$options['services'],
-					__( 'One per line as Name|URL|Description. URL and description are optional.', 'dovetail-studio' )
-				);
-				$this->opening_hours( $options['opening_hours'] );
-				$this->basic_textarea(
-					'special_hours',
-					__( 'Special opening hours', 'dovetail-studio' ),
-					$options['special_hours'],
-					__( 'One per line: Start date|End date|Opens|Closes. Use 00:00|00:00 for closed dates.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start(
-					__( 'Type-specific fields', 'dovetail-studio' ),
-					__( 'Only properties compatible with the selected business type are emitted.', 'dovetail-studio' ),
-					'type-specific'
-				);
-				$this->basic_textarea(
-					'serves_cuisine',
-					__( 'Cuisine types', 'dovetail-studio' ),
-					$options['serves_cuisine'],
-					__( 'Restaurant, cafe, bar, or bakery only. Comma-separated.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'menu',
-					__( 'Menu URL', 'dovetail-studio' ),
-					$options['menu'],
-					'url',
-					__( 'Food establishments only.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'accepts_reservations',
-					__( 'Accepts reservations', 'dovetail-studio' ),
-					$options['accepts_reservations'],
-					'text',
-					__( 'Food establishments only. Use true, false, or a reservation URL.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'checkin_time',
-					__( 'Check-in time', 'dovetail-studio' ),
-					$options['checkin_time'],
-					'time',
-					__( 'Hotel only.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'checkout_time',
-					__( 'Check-out time', 'dovetail-studio' ),
-					$options['checkout_time'],
-					'time',
-					__( 'Hotel only.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'star_rating',
-					__( 'Star rating', 'dovetail-studio' ),
-					$options['star_rating'],
-					'number',
-					__( 'Hotel only. Value from 1 to 5.', 'dovetail-studio' ),
-					'0.1'
-				);
-				$this->basic_textarea(
-					'amenities',
-					__( 'Amenities', 'dovetail-studio' ),
-					$options['amenities'],
-					__( 'Hotel only. Comma-separated.', 'dovetail-studio' )
-				);
-				$this->basic_textarea(
-					'medical_specialties',
-					__( 'Medical specialties', 'dovetail-studio' ),
-					$options['medical_specialties'],
-					__( 'MedicalClinic or Dentist only. Comma-separated Schema.org specialty names.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start( __( 'Profiles', 'dovetail-studio' ), '', 'profiles' );
-				$this->textarea(
-					'same_as',
-					__( 'Social profiles', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					__( 'One full URL per line. In Schema.org, sameAs refers to an external URL that unequivocally identifies the same entity. Official examples include Wikipedia, Wikidata, and an official website. Yoast also describes these as URLs for social media profiles or other authoritative profiles of the organization.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start( __( 'Identifiers', 'dovetail-studio' ), '', 'identifiers' );
-				$this->text( 'vat_id', __( 'VAT ID', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text( 'tax_id', __( 'Tax ID', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text(
-					'iso6523_code',
-					__( 'ISO 6523 code', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true,
-					'text',
-					__( 'Example: 0199:LEI-CODE.', 'dovetail-studio' )
-				);
-				$this->text(
-					'global_location_number',
-					__( 'Global Location Number', 'dovetail-studio' ),
-					$options,
-					$yoast,
-					true
-				);
-				$this->text( 'lei_code', __( 'LEI code', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text( 'naics', __( 'NAICS', 'dovetail-studio' ), $options, $yoast, true );
-				$this->text( 'duns', __( 'DUNS', 'dovetail-studio' ), $options, $yoast, true );
-				$this->basic_textarea(
-					'identifiers',
-					__( 'Other identifiers', 'dovetail-studio' ),
-					$options['identifiers'],
-					__( 'One per line as Name|Value, for example Company number|123456.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start(
-					__( 'JSON-LD Preview', 'dovetail-studio' ),
-					__( 'Load the JSON-LD currently published on the homepage, including the Yoast graph enriched by this plugin.', 'dovetail-studio' ),
-					'json-preview'
-				);
-				$this->json_preview();
-				$this->section_end();
-				?>
-
-				<?php
-				$this->section_start(
-					__( 'Site Graph & Breadcrumbs', 'dovetail-studio' ),
-					__( 'With Yoast SEO active, Yoast provides WebSite, WebPage, Article and BreadcrumbList and the breadcrumb trail follows the Yoast breadcrumb settings. Without Yoast SEO, this module adds them to a single JSON-LD graph together with the business entity.', 'dovetail-studio' ),
-					'site-graph'
-				);
-				$this->checkbox(
-					'site_graph_enabled',
-					__( 'Site graph', 'dovetail-studio' ),
-					$options['site_graph_enabled'],
-					__( 'Add WebSite, WebPage, Article and author entities when Yoast SEO is not providing the graph.', 'dovetail-studio' )
-				);
-				$this->checkbox(
-					'breadcrumbs_enabled',
-					__( 'Breadcrumbs', 'dovetail-studio' ),
-					$options['breadcrumbs_enabled'],
-					__( 'Provide the breadcrumb trail to the theme through dovetail_studio_get_breadcrumbs() and add BreadcrumbList when Yoast SEO is not providing the graph.', 'dovetail-studio' )
-				);
-				$this->basic_input(
-					'breadcrumbs_home_label',
-					__( 'Home label', 'dovetail-studio' ),
-					$options['breadcrumbs_home_label'],
-					'text',
-					__( 'First breadcrumb text when the plugin builds the trail. Leave empty to use "Home". With Yoast SEO, set it in the Yoast breadcrumb settings instead.', 'dovetail-studio' )
-				);
-				$this->section_end();
-				?>
-
-				<?php $this->section_start( __( 'Integration', 'dovetail-studio' ), __( 'Automatic keeps an existing Yoast property and uses the module value only when that property is missing. Use plugin value explicitly replaces that property; a blank plugin value omits it. Fields without a source selector are controlled directly by this plugin.', 'dovetail-studio' ), 'integration' ); ?>
-				<?php $this->integration_summary( $options, $yoast ); ?>
-				<?php $this->section_end(); ?>
-
-				<div class="dovetail-save-bar">
-					<?php submit_button(); ?>
-				</div>
-			</form>
-		</div>
-		<?php
-	}
-
-	/** Section wrapper. */
-	private function section_start( $title, $description = '', $id = '' ) {
-		$section_id = '' !== $id ? ' id="dovetail-' . esc_attr( $id ) . '"' : '';
-		echo '<section class="dovetail-card"' . $section_id . '>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built with esc_attr() above.
-			. '<div class="dovetail-card-header"><h2>' . esc_html( $title ) . '</h2>';
-
-		if ( '' !== $description ) {
-			echo '<p class="description">' . esc_html( $description ) . '</p>';
 		}
 
-		echo '</div><table class="form-table" role="presentation"><tbody>';
+		$yoast = $this->get_recognized_yoast_values();
+
+		View::render(
+			dirname( __DIR__ ),
+			'admin-page',
+			array(
+				'dir'             => dirname( __DIR__ ),
+				'version'         => DOVETAIL_SCHEMA_SEO_VERSION,
+				'option'          => Schema::OPTION_NAME,
+				'options'         => $options,
+				'yoast'           => $yoast,
+				'yoast_active'    => $yoast_active,
+				'yoast_is_person' => $yoast_is_person,
+				'other_seo'       => \DovetailStudio\Core\Seo\Environment::other_seo_plugin(),
+				'missing'         => $missing && ! empty( $options['enabled'] ) ? $missing : array(),
+				'schema_types'    => self::schema_types(),
+				'hours'           => $this->opening_hours( (array) $options['opening_hours'] ),
+				'integration'     => $this->integration_summary( $options, $yoast ),
+			)
+		);
 	}
 
-	/** Close section wrapper. */
-	private function section_end() {
-		echo '</tbody></table></section>';
-	}
-
-	/** Current frontend JSON-LD preview and copy controls. */
-	private function json_preview() {
-		echo '<tr class="dovetail-json-row"><td colspan="2">';
-		echo '<div class="dovetail-json-actions">';
-		echo '<button class="button button-secondary" id="dovetail-load-json" type="button">'
-			. esc_html__( 'Load current JSON', 'dovetail-studio' ) . '</button>';
-		echo '<button class="button" id="dovetail-copy-json" type="button" disabled>'
-			. esc_html__( 'Copy JSON', 'dovetail-studio' ) . '</button>';
-		echo '<span class="dovetail-json-status" id="dovetail-json-status" role="status" aria-live="polite"></span>';
-		echo '</div>';
-		echo '<textarea class="large-text code dovetail-json-preview" id="dovetail-json-output" rows="20" readonly spellcheck="false" placeholder="'
-			. esc_attr__( 'Click “Load current JSON” to retrieve the published Schema.', 'dovetail-studio' )
-			. '"></textarea>';
-		echo '<p class="description">'
-			. esc_html__( 'This is the public homepage output, not a simulation. Save pending changes first. With Yoast active, the complete enriched @graph is shown; without Yoast, the module’s native JSON-LD is shown.', 'dovetail-studio' )
-			. '</p>';
-		echo '</td></tr>';
-	}
-
-	/** Basic input row. */
-	private function basic_input( $field, $label, $value, $type = 'text', $help = '', $step = '' ) {
-		$name = Schema::OPTION_NAME . '[' . $field . ']';
-		echo '<tr><th scope="row"><label for="dovetail-'
-			. esc_attr( $field ) . '">' . esc_html( $label ) . '</label></th><td>';
-		echo '<input class="regular-text" id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( $name ) . '" type="' . esc_attr( $type )
-			. '" value="' . esc_attr( $value ) . '"';
-
-		if ( '' !== $step ) {
-			echo ' step="' . esc_attr( $step ) . '"';
-		}
-
-		echo '>';
-
-		if ( '' !== $help ) {
-			echo '<p class="description">' . esc_html( $help ) . '</p>';
-		}
-
-		echo '</td></tr>';
-	}
-
-	/** Sourced single-line field. */
-	private function text( $field, $label, array $options, array $yoast, $with_source = false, $type = 'text', $help = '' ) {
-		$this->basic_sourced_row_start( $field, $label );
-		echo '<input class="regular-text" id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( Schema::OPTION_NAME . '[' . $field . ']' )
-			. '" type="' . esc_attr( $type ) . '" value="' . esc_attr( $options[ $field ] ) . '">';
-
-		if ( '' !== $help ) {
-			echo '<p class="description">' . esc_html( $help ) . '</p>';
-		}
-
-		if ( $with_source ) {
-			$this->source_control( $field, $options, $yoast );
-		}
-
-		echo '</td></tr>';
-	}
-
-	/** Sourced textarea field. */
-	private function textarea( $field, $label, array $options, array $yoast, $with_source = false, $help = '' ) {
-		$this->basic_sourced_row_start( $field, $label );
-		echo '<textarea class="large-text" rows="4" id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( Schema::OPTION_NAME . '[' . $field . ']' ) . '">'
-			. esc_textarea( $options[ $field ] ) . '</textarea>';
-
-		if ( '' !== $help ) {
-			echo '<p class="description">' . esc_html( $help ) . '</p>';
-		}
-
-		if ( $with_source ) {
-			$this->source_control( $field, $options, $yoast );
-		}
-
-		echo '</td></tr>';
-	}
-
-	/** Basic textarea without source selector. */
-	private function basic_textarea( $field, $label, $value, $help = '' ) {
-		$this->basic_sourced_row_start( $field, $label );
-		echo '<textarea class="large-text" rows="4" id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( Schema::OPTION_NAME . '[' . $field . ']' ) . '">'
-			. esc_textarea( $value ) . '</textarea>';
-
-		if ( '' !== $help ) {
-			echo '<p class="description">' . esc_html( $help ) . '</p>';
-		}
-
-		echo '</td></tr>';
-	}
-
-	/** Media URL with WordPress picker. */
-	private function media_field( $field, $label, array $options, array $yoast, $with_source = true ) {
-		$this->basic_sourced_row_start( $field, $label );
-		echo '<div class="dovetail-media"><input class="regular-text" id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( Schema::OPTION_NAME . '[' . $field . ']' )
-			. '" type="url" value="' . esc_attr( $options[ $field ] ) . '"> ';
-		echo '<button class="button dovetail-select-media" data-target="dovetail-'
-			. esc_attr( $field ) . '" type="button">' . esc_html__( 'Select image', 'dovetail-studio' )
-			. '</button></div>';
-
-		if ( $with_source ) {
-			$this->source_control( $field, $options, $yoast );
-		}
-
-		echo '</td></tr>';
-	}
-
-	/** Checkbox row. */
-	private function checkbox( $field, $label, $value, $help = '' ) {
-		echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>';
-		echo '<label><input name="'
-			. esc_attr( Schema::OPTION_NAME . '[' . $field . ']' ) . '" type="checkbox" value="1" '
-			. checked( 1, $value, false ) . '> ' . esc_html( $help ) . '</label>';
-		echo '</td></tr>';
-	}
-
-	/** Select row. */
-	private function select( $field, $label, $value, array $choices ) {
-		echo '<tr><th scope="row"><label for="dovetail-'
-			. esc_attr( $field ) . '">' . esc_html( $label ) . '</label></th><td>';
-		echo '<select id="dovetail-'
-			. esc_attr( $field ) . '" name="' . esc_attr( Schema::OPTION_NAME . '[' . $field . ']' ) . '">';
-
-		foreach ( $choices as $choice_value => $choice_label ) {
-			echo '<option value="'
-				. esc_attr( $choice_value ) . '" ' . selected( $value, $choice_value, false ) . '>'
-				. esc_html( $choice_label ) . '</option>';
-		}
-
-		echo '</select></td></tr>';
-	}
-
-	/** Opening hours matrix. */
+	/**
+	 * Opening hours rows for the template: label, field name and saved values per day.
+	 *
+	 * @param array<string,mixed> $hours Saved opening hours.
+	 * @return array<int,array<string,mixed>>
+	 */
 	private function opening_hours( array $hours ) {
-		echo '<tr><th scope="row">'
-			. esc_html__( 'Opening hours', 'dovetail-studio' ) . '</th><td><div class="dovetail-hours">';
+		$days = array();
 
 		foreach ( Schema::days() as $day => $label ) {
-			$row  = isset( $hours[ $day ] ) ? $hours[ $day ] : array(
-				'enabled'  => 0,
-				'opens'    => '09:00',
-				'closes'   => '17:00',
-				'opens_2'  => '',
-				'closes_2' => '',
+			$days[] = array(
+				'label' => $label,
+				'name'  => Schema::OPTION_NAME . '[opening_hours][' . $day . ']',
+				'row'   => isset( $hours[ $day ] ) ? $hours[ $day ] : array(
+					'enabled'  => 0,
+					'opens'    => '09:00',
+					'closes'   => '17:00',
+					'opens_2'  => '',
+					'closes_2' => '',
+				),
 			);
-			$base = Schema::OPTION_NAME . '[opening_hours][' . $day . ']';
-			echo '<div class="dovetail-hours-row">';
-			echo '<label class="dovetail-day"><input type="checkbox" name="'
-				. esc_attr( $base . '[enabled]' ) . '" value="1" ' . checked( 1, $row['enabled'], false )
-				. '> ' . esc_html( $label ) . '</label>';
-			echo '<div class="dovetail-time-period">';
-			echo '<span class="dovetail-hours-period">'
-				. esc_html__( 'Period 1', 'dovetail-studio' ) . '</span>';
-			echo '<label><span class="screen-reader-text">'
-				. esc_html__( 'Opens', 'dovetail-studio' ) . '</span><input type="time" name="'
-				. esc_attr( $base . '[opens]' ) . '" value="' . esc_attr( $row['opens'] ) . '"></label>';
-			echo '<span aria-hidden="true">–</span>';
-			echo '<label><span class="screen-reader-text">'
-				. esc_html__( 'Closes', 'dovetail-studio' ) . '</span><input type="time" name="'
-				. esc_attr( $base . '[closes]' ) . '" value="' . esc_attr( $row['closes'] ) . '"></label>';
-			echo '</div><div class="dovetail-time-period">';
-			echo '<span class="dovetail-hours-period">'
-				. esc_html__( 'Period 2', 'dovetail-studio' ) . '</span>';
-			echo '<label><span class="screen-reader-text">'
-				. esc_html__( 'Second opening time', 'dovetail-studio' ) . '</span><input type="time" name="'
-				. esc_attr( $base . '[opens_2]' ) . '" value="' . esc_attr( $row['opens_2'] ) . '"></label>';
-			echo '<span aria-hidden="true">–</span>';
-			echo '<label><span class="screen-reader-text">'
-				. esc_html__( 'Second closing time', 'dovetail-studio' ) . '</span><input type="time" name="'
-				. esc_attr( $base . '[closes_2]' ) . '" value="' . esc_attr( $row['closes_2'] )
-				. '"></label>';
-			echo '</div></div>';
 		}
 
-		echo '</div></td></tr>';
+		return $days;
 	}
 
-	/** Source selector and recognized Yoast value. */
-	private function source_control( $field, array $options, array $yoast ) {
-		$value = isset( $options['sources'][ $field ] ) ? $options['sources'][ $field ] : 'automatic';
-		$name  = Schema::OPTION_NAME . '[sources][' . $field . ']';
-		echo '<div class="dovetail-source"><label>'
-			. esc_html__( 'Source:', 'dovetail-studio' ) . ' <select name="' . esc_attr( $name ) . '">';
-		echo '<option value="automatic" '
-			. selected( $value, 'automatic', false ) . '>'
-			. esc_html__( 'Automatic — prefer Yoast', 'dovetail-studio' ) . '</option>';
-		echo '<option value="plugin" '
-			. selected( $value, 'plugin', false ) . '>' . esc_html__( 'Use plugin value', 'dovetail-studio' )
-			. '</option>';
-		echo '</select></label>';
-
-		if ( ! empty( $yoast[ $field ] ) ) {
-			$display = is_array( $yoast[ $field ] ) ? implode( ', ', $yoast[ $field ] ) : $yoast[ $field ];
-			echo '<p class="description"><strong>'
-				. esc_html__( 'Recognized Yoast value:', 'dovetail-studio' ) . '</strong> '
-				. esc_html( $display ) . '</p>';
-		}
-
-		echo '</div>';
-	}
-
-	/** Begin a normal table row. */
-	private function basic_sourced_row_start( $field, $label ) {
-		echo '<tr><th scope="row"><label for="dovetail-'
-			. esc_attr( $field ) . '">' . esc_html( $label ) . '</label></th><td>';
-	}
-
-	/** Integration overview. */
+	/**
+	 * Integration overview for the template: shared fields with their source, and plugin-only fields.
+	 *
+	 * @param array<string,mixed> $options Saved options.
+	 * @param array<string,mixed> $yoast   Recognized Yoast values.
+	 * @return array{shared: array<int,array<string,string>>, plugin: string[]}
+	 */
 	private function integration_summary( array $options, array $yoast ) {
 		$sourced_labels = array(
 			'name'                   => __( 'Name', 'dovetail-studio' ),
@@ -1211,38 +509,24 @@ final class Admin {
 			'identifiers'              => __( 'Other identifiers', 'dovetail-studio' ),
 		);
 
-		echo '<tr class="dovetail-integration-row"><td colspan="2"><div class="dovetail-table-scroll"><table class="widefat striped dovetail-integration"><thead><tr><th>'
-			. esc_html__( 'Information', 'dovetail-studio' ) . '</th><th>'
-			. esc_html__( 'Configured priority', 'dovetail-studio' ) . '</th><th>'
-			. esc_html__( 'Yoast value recognized in admin', 'dovetail-studio' )
-			. '</th></tr></thead><tbody>';
-		echo '<tr class="dovetail-integration-group"><th colspan="3">'
-			. esc_html__( 'Fields shared with Yoast SEO', 'dovetail-studio' ) . '</th></tr>';
+		$shared = array();
 
 		foreach ( $sourced_labels as $field => $label ) {
-			$source = isset( $options['sources'][ $field ] ) && 'plugin' === $options['sources'][ $field ]
-				? __( 'Plugin', 'dovetail-studio' )
-				: __( 'Automatic — Yoast, then plugin', 'dovetail-studio' );
-			$found  = empty( $yoast[ $field ] )
-				? __( 'Not detected', 'dovetail-studio' )
-				: ( is_array( $yoast[ $field ] ) ? implode( ', ', $yoast[ $field ] ) : $yoast[ $field ] );
-			echo '<tr><td>'
-				. esc_html( $label ) . '</td><td><span class="dovetail-origin-badge is-shared">'
-				. esc_html( $source ) . '</span></td><td>' . esc_html( $found ) . '</td></tr>';
+			$shared[] = array(
+				'label'  => $label,
+				'source' => isset( $options['sources'][ $field ] ) && 'plugin' === $options['sources'][ $field ]
+					? __( 'Plugin', 'dovetail-studio' )
+					: __( 'Automatic — Yoast, then plugin', 'dovetail-studio' ),
+				'found'  => empty( $yoast[ $field ] )
+					? __( 'Not detected', 'dovetail-studio' )
+					: ( is_array( $yoast[ $field ] ) ? implode( ', ', $yoast[ $field ] ) : $yoast[ $field ] ),
+			);
 		}
 
-		echo '<tr class="dovetail-integration-group"><th colspan="3">'
-			. esc_html__( 'Fields managed by this plugin', 'dovetail-studio' ) . '</th></tr>';
-
-		foreach ( $plugin_labels as $label ) {
-			echo '<tr><td>'
-				. esc_html( $label ) . '</td><td colspan="2"><span class="dovetail-origin-badge is-plugin">'
-				. esc_html__( 'Controlled directly by plugin', 'dovetail-studio' ) . '</span></td></tr>';
-		}
-
-		echo '</tbody></table></div><p class="description">'
-			. esc_html__( 'Runtime values already present in Yoast’s generated Organization graph remain authoritative in Automatic mode, even when this admin summary cannot read them.', 'dovetail-studio' )
-			. '</p></td></tr>';
+		return array(
+			'shared' => $shared,
+			'plugin' => array_values( $plugin_labels ),
+		);
 	}
 
 	/** Best-effort display of public Yoast settings; runtime merge uses graph values. */

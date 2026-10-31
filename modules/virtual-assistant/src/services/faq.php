@@ -210,52 +210,16 @@ function dt_va_faq_settings() {
 		);
 	}
 
-	echo '<h3>'
-		. esc_html__( 'Add an entry', 'dovetail-studio' ) . '</h3><p class="description">'
-		. esc_html__( 'Adds one FAQ entry without hand-editing JSON. Keywords are comma-separated plain words/phrases (no regex).', 'dovetail-studio' )
-		. '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_faq_add' );
-	echo '<input type="hidden" name="dt_va_faq_add" value="1"><table class="form-table">';
-	echo '<tr><th><label for="dt-va-faq-id">'
-		. esc_html__( 'Id', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-faq-id" name="add_id" placeholder="'
-		. esc_attr__( 'e.g. turnaround', 'dovetail-studio' ) . '" required></td></tr>';
-	echo '<tr><th><label for="dt-va-faq-keywords">'
-		. esc_html__( 'Keywords', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-faq-keywords" name="add_keywords" placeholder="'
-		. esc_attr__( 'Comma-separated, e.g. how long, turnaround, timeline', 'dovetail-studio' )
-		. '" required></td></tr>';
-	echo '<tr><th><label for="dt-va-faq-answer">'
-		. esc_html__( 'Answer', 'dovetail-studio' )
-		. '</label></th><td><textarea class="large-text" id="dt-va-faq-answer" name="add_answer" rows="3" required></textarea></td></tr>';
-	echo '</table><p><button class="button">'
-		. esc_html__( 'Add entry', 'dovetail-studio' ) . '</button></p></form><hr>';
 	$saved = dt_va_faq_config();
-	$v     = $saved ? $saved : dt_va_faq_starter();
-	echo '<h2>'
-		. esc_html__( 'Offline FAQ', 'dovetail-studio' ) . '</h2><p>'
-		. wp_kses_post(
-			__( 'Answers shown when the AI provider is unavailable or not configured, and as a quick check before sending a short question to the AI. Each entry needs an <code>id</code>, at least one plain <code>keyword</code> (no regex; words or short phrases only) and an <code>answer</code>. <code>{{COMPANY_NAME}}</code> in the answer is replaced with the configured company name. First matching entry, in list order, wins.', 'dovetail-studio' )
-		) . '</p>';
-	echo '<p class="description">'
-		. esc_html__( 'Saving here replaces the built-in offline FAQ entirely for this installation. Restore default removes the override and goes back to the built-in list.', 'dovetail-studio' )
-		. '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_faq' );
-	echo '<input type="hidden" name="dt_va_faq" value="1">';
-	echo '<textarea name="faq_entries" rows="24" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px">'
-		. esc_textarea( wp_json_encode( $v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ) . '</textarea>';
-	echo '<p class="description">'
-		. ( $saved ? esc_html( sprintf( /* translators: %d: number of entries. */ _n( 'Using the saved offline FAQ (%d entry).', 'Using the saved offline FAQ (%d entries).', count( $saved ), 'dovetail-studio' ), count( $saved ) ) ) : esc_html__( 'Using the built-in offline FAQ; the text above is only a starting example.', 'dovetail-studio' ) )
-		. '</p>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save offline FAQ', 'dovetail-studio' )
-		. '</button> <button class="button" name="restore_default" value="1" formnovalidate>'
-		. esc_html__( 'Restore default', 'dovetail-studio' ) . '</button>';
-	dt_va_json_tools( 'faq_entries' );
-	echo '</p><p class="description">'
-		. esc_html__( 'Import validates a JSON file and fills this editor; click Save to apply it. Export downloads the validated editor content, including unsaved edits. Download a Sample provides a template for this format.', 'dovetail-studio' )
-		. '</p></form>';
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-faq',
+		array(
+			'saved'      => $saved,
+			'json'       => (string) wp_json_encode( $saved ? $saved : dt_va_faq_starter(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
+			'json_tools' => dt_va_json_tools_args( 'faq_entries' ),
+		)
+	);
 	dt_va_setup_review_controls( 'faq' );
 }
