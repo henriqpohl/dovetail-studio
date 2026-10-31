@@ -5,23 +5,39 @@ namespace DovetailStudio\Newsletter;
 defined( 'ABSPATH' ) || exit;
 
 final class Module {
-    private static $instance = null;
-    private $booted = false;
+	private static $instance = null;
+	private $booted          = false;
 
-    public static function instance(): self {
-        if ( null === self::$instance ) { self::$instance = new self(); }
-        return self::$instance;
-    }
+	public static function instance(): self {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
 
-    public function boot(): void {
-        if ( $this->booted ) { return; }
-        $this->booted = true;
+		return self::$instance;
+	}
 
-        defined( 'DOVETAIL_NEWSLETTER_VERSION' ) || define( 'DOVETAIL_NEWSLETTER_VERSION', '3.2.0' );
-        defined( 'DOVETAIL_NEWSLETTER_PATH' ) || define( 'DOVETAIL_NEWSLETTER_PATH', trailingslashit( dirname( __DIR__ ) ) );
-        defined( 'DOVETAIL_NEWSLETTER_URL' ) || define( 'DOVETAIL_NEWSLETTER_URL', DOVETAIL_STUDIO_URL . 'modules/newsletter/' );
-        defined( 'DOVETAIL_NEWSLETTER_ENCRYPTION_PREFIX' ) || define( 'DOVETAIL_NEWSLETTER_ENCRYPTION_PREFIX', 'dovetail_enc_v1:' );
+	public function boot(): void {
+		if ( $this->booted ) {
+			return;
+		}
 
-        require_once __DIR__ . '/functions.php';
-    }
+		$this->booted = true;
+
+		// The version comes from module.php only, so it can never drift from the manifest.
+		$manifest = require dirname( __DIR__ ) . '/module.php';
+		defined( 'DOVETAIL_NEWSLETTER_VERSION' ) || define(
+			'DOVETAIL_NEWSLETTER_VERSION',
+			(string) $manifest['version']
+		);
+		defined( 'DOVETAIL_NEWSLETTER_PATH' ) || define(
+			'DOVETAIL_NEWSLETTER_PATH',
+			trailingslashit( dirname( __DIR__ ) )
+		);
+		defined( 'DOVETAIL_NEWSLETTER_URL' ) || define(
+			'DOVETAIL_NEWSLETTER_URL',
+			\DovetailStudio\Core\Loader::path_url( dirname( __DIR__ ) )
+		);
+
+		require_once __DIR__ . '/functions.php';
+	}
 }

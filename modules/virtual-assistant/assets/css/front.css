@@ -1,141 +1,23 @@
-/* 16/09/2026: iOS Safari zooms the page when a field under 16px takes focus, pushing the send button off screen. Fields are 16px at phone widths. */
+/* Dovetail Studio AI Assistant: the panel. Loaded with front.js on the first interaction or once the page is idle;
+   the tab and the nudge are in front-tab.css. Every class is prefixed dt-va-. */
+/* iOS Safari zooms the page when a field under 16px takes focus, pushing the send button off screen. Fields are 16px at phone widths. */
 @media (max-width: 600px) {
-  .dt-va-inputrow textarea,
+.dt-va-inputrow textarea,
   .dt-va-form input,
   .dt-va-form textarea,
   .dt-va-chip {
     font-size: 16px;
   }
-  .dt-va-inputrow textarea {
+.dt-va-inputrow textarea {
     min-height: 46px;
   }
 }
-:root {
-  --dt-va-accent: #e2231a;
-  --dt-va-accent-hover: #b81b14;
-  --dt-va-panel: #161618;
-  --dt-va-surface: #1f1f23;
-  --dt-va-message: #26262b;
-  --dt-va-input: #0f0f12;
-  --dt-va-text: #f5f4f0;
-  --dt-va-user-message: #f5f4f0;
-  --dt-va-user-text: #111113;
-  --dt-va-muted: #a3a3a8;
-  --dt-va-border: #33333a;
-}
-/* ============================================================
-   DT-VA  Virtual Assistant: edge tab + guided enquiry panel
-   Paste at the END of Customiser > Additional CSS.
-   Site-wide. Every class is prefixed dt-va- so it touches nothing else.
-   All sizes in px: the Uncode root is 10px, so rem is wrong on this site.
-   Marker for find/replace: DT-VA
-   ============================================================ */
 
-/* 16/09/2026 (b): data-lenis-prevent on the panel. Uncode runs Lenis smooth scroll, which swallows wheel and touch
-   events on nested scroll areas unless they carry that attribute; without it the body (and the form) could not be scrolled. */
-/* ---- edge tab (fixed, right edge, vertically centred; holds position on scroll) ---- */
-.dt-va-tab {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 99990;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 62px;
-  margin: 0;
-  padding: 11px 0 18px;
-  background: var(--dt-va-accent);
-  color: #fff;
-  border: 0;
-  border-radius: 16px 0 0 16px;
-  box-shadow: -8px 0 28px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  line-height: 1;
-  transition:
-    background 0.15s ease,
-    width 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.dt-va-tab:hover {
-  background: var(--dt-va-accent-hover);
-  width: 66px;
-}
-.dt-va-tab:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: -4px;
-}
-.dt-va-tab .dt-va-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 100%;
-  background: #fff;
-  color: #000;
-  display: grid;
-  place-items: center;
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-.dt-va-tab .dt-va-lbl {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  line-height: 1;
-}
-.dt-va-tab svg {
-  width: 22px;
-  height: 22px;
-  display: block;
-}
-.dt-va-tab[hidden] {
-  display: none;
-}
+/* The panel carries data-lenis-prevent: themes running Lenis smooth scroll would otherwise swallow wheel and touch events on its scroll areas. */
 /* Company setting: Collapse Avatar hides the mark only in the closed tab, not the open panel header.
    Desktop-only top padding bump: without the 40px circle, the 11px/18px split (sized to balance the
    circle) reads as lopsided, so give the label more even padding above. Phones use a horizontal pill
    (below) where removing the mark does not affect top/bottom spacing, so it is left untouched there. */
-.dt-va-tab.dt-va-tab-noavatar .dt-va-mark {
-  display: none;
-}
-@media (min-width: 601px) {
-  .dt-va-tab.dt-va-tab-noavatar {
-    padding-top: 20px;
-  }
-}
-@media (max-width: 600px) {
-  .dt-va-tab {
-    width: 50px;
-    gap: 12px;
-    padding: 9px 0 14px;
-    border-radius: 13px 0 0 13px;
-  }
-  .dt-va-tab:hover {
-    width: 50px;
-  }
-  .dt-va-tab .dt-va-mark {
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
-    border-radius: 100%;
-  }
-  .dt-va-tab .dt-va-lbl {
-    font-size: 14px;
-  }
-  .dt-va-tab svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-/* Keep the tab clear of the CookieYes banner and the Uncode back-to-top button: both live bottom-right; the tab is centred, so no clash. */
 
 /* ---- panel ---- */
 .dt-va {
@@ -154,7 +36,7 @@
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: inherit;
   font-size: 15px;
   line-height: 1.45;
   text-align: left;
@@ -163,7 +45,7 @@
 .dt-va[hidden] {
   display: none;
 }
-/* theme resets: Uncode and the preview page both style bare section/header/footer elements */
+/* theme resets: many themes style bare section/header/footer elements */
 .dt-va,
 .dt-va-head,
 .dt-va-foot,
@@ -206,7 +88,7 @@
   margin: 0;
 }
 @media (max-width: 600px) {
-  .dt-va {
+.dt-va {
     right: 0;
     bottom: 0;
     width: 100vw;
@@ -216,7 +98,6 @@
     border: 0;
   }
 }
-
 .dt-va-head {
   display: flex;
   align-items: center;
@@ -232,7 +113,7 @@
   background: var(--dt-va-accent);
   display: grid;
   place-items: center;
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: inherit;
   font-weight: 700;
   font-size: 14px;
   letter-spacing: -0.02em;
@@ -287,7 +168,6 @@
   background: #2a2a30;
   color: var(--dt-va-text);
 }
-
 .dt-va-body {
   flex: 1;
   min-height: 0;
@@ -304,7 +184,7 @@
   flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .dt-va-body {
+.dt-va-body {
     scroll-behavior: auto;
   }
 }
@@ -368,23 +248,12 @@
 .dt-va-typing i:nth-child(3) {
   animation-delay: 0.36s;
 }
-@keyframes dmVaBlink {
-  0%,
-  80%,
-  100% {
-    opacity: 0.25;
-  }
-  40% {
-    opacity: 1;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .dt-va-typing i {
+.dt-va-typing i {
     animation: none;
     opacity: 0.6;
   }
 }
-
 .dt-va-cards {
   align-self: stretch;
   display: flex;
@@ -433,7 +302,6 @@
   font-size: 13px;
   margin-bottom: 2px;
 }
-
 .dt-va-form {
   align-self: stretch;
   background: var(--dt-va-surface);
@@ -531,7 +399,6 @@
   opacity: 0.7;
   cursor: default;
 }
-
 .dt-va-summary {
   align-self: stretch;
   border: 1px solid var(--dt-va-border);
@@ -569,7 +436,6 @@
   color: var(--dt-va-text);
   overflow-wrap: anywhere;
 }
-
 .dt-va-chips {
   padding: 6px 14px 8px;
   display: flex;
@@ -599,7 +465,6 @@
   border-style: dashed;
   color: #d7d7db;
 }
-
 .dt-va-foot {
   border-top: 1px solid var(--dt-va-border);
   padding: 10px 12px 10px 14px;
@@ -691,14 +556,14 @@
   flex-wrap: wrap;
 }
 @media (max-width: 600px) {
-  .dt-va-links {
+.dt-va-links {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px 10px;
     align-items: stretch;
     margin-top: 10px;
   }
-  .dt-va-links button#dt-va-human,
+.dt-va-links button#dt-va-human,
   .dt-va-links .dt-va-wa {
     margin: 0;
     min-height: 44px;
@@ -715,16 +580,16 @@
     gap: 7px;
     padding: 0 12px;
   }
-  .dt-va-links .dt-va-wa svg {
+.dt-va-links .dt-va-wa svg {
     width: 18px;
     height: 18px;
   }
-  .dt-va-links button#dt-va-human:hover,
+.dt-va-links button#dt-va-human:hover,
   .dt-va-links .dt-va-wa:hover {
     background: var(--dt-va-message);
     color: var(--dt-va-text);
   }
-  .dt-va-links #dt-va-hours {
+.dt-va-links #dt-va-hours {
     grid-column: 1/-1;
     text-align: center;
     font-size: 12.5px;
@@ -732,13 +597,12 @@
     padding-top: 2px;
   }
 }
-
-/* Accessibility plugin (Pojo) high-contrast modes: let them win */
+/* Accessibility plugins' high-contrast modes: let them win */
 body.pojo-a11y-high-contrast .dt-va,
 body.pojo-a11y-negative-contrast .dt-va {
   filter: none;
 }
-/* file field, honeypot, next-steps card (added 16/09/2026) */
+/* file field, honeypot, next-steps card */
 .dt-va-form .dt-va-file input[type="file"] {
   padding: 9px 12px;
   font-size: 13px;
@@ -826,68 +690,8 @@ body.pojo-a11y-negative-contrast .dt-va {
   grid-column: 2;
 }
 /* END DT-VA */
-/* 23/09/2026: "WhatsApp the studio" in the site menu: red rounded pill, every screen size */
-.menu-item.dt-wa-menu > a {
-  background: var(--dt-va-accent) !important;
-  color: #fff !important;
-  border-radius: 999px !important;
-  padding: 9px 16px !important;
-  line-height: 1.2 !important;
-  font-weight: 600;
-  white-space: nowrap;
-  display: inline-block;
-  margin-left: 6px;
-  transition: background 0.15s ease;
-}
-.menu-item.dt-wa-menu > a span,
-.menu-item.dt-wa-menu > a i {
-  color: #fff !important;
-}
-.menu-item.dt-wa-menu > a:hover,
-.menu-item.dt-wa-menu > a:focus {
-  background: var(--dt-va-accent-hover) !important;
-  color: #fff !important;
-}
-.menu-item.dt-wa-menu > a .fa-dropdown {
-  display: none !important;
-}
-.menu-primary .menu-item.dt-wa-menu {
-  display: inline-flex;
-  align-items: center;
-}
-@media (max-width: 959px) {
-  .menu-item.dt-wa-menu {
-    padding: 10px 0 4px;
-  }
-  .menu-item.dt-wa-menu > a {
-    display: inline-block !important;
-    margin-left: 0;
-    padding: 11px 20px !important;
-    font-size: 15px;
-  }
-}
-/* 24/09/2026 dt-wa-menu level: border-box pill, 40px, on the menu's midline (was 62px: 44px min-height + padding) */
-.menu-item.dt-wa-menu {
-  display: flex !important;
-  align-items: center !important;
-}
-.menu-item.dt-wa-menu > a {
-  box-sizing: border-box !important;
-  height: auto !important;
-  min-height: 40px !important;
-  padding: 0 18px !important;
-  line-height: 1 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  align-self: center !important;
-}
-@media (max-width: 959px) {
-  .menu-item.dt-wa-menu > a {
-    min-height: 44px !important;
-    padding: 0 20px !important;
-  }
-}
-/* 17/09/2026: phones. Pill launcher, full-screen panel with a red header, opening choices as cards. */
+
+/* phones. Pill launcher, full-screen panel with an accent header, opening choices as cards. */
 .dt-va-restart {
   width: 40px;
   height: 40px;
@@ -946,14 +750,14 @@ body.pojo-a11y-negative-contrast .dt-va {
   width: 42px;
   height: 42px;
   border-radius: 11px;
-  background: rgba(226, 35, 26, 0.16);
+  background: color-mix(in srgb, var(--dt-va-accent) 16%, transparent);
   display: grid;
   place-items: center;
 }
 .dt-va-door .dt-va-ico svg {
   width: 22px;
   height: 22px;
-  stroke: #ff6b63;
+  stroke: color-mix(in srgb, var(--dt-va-accent) 65%, #fff);
   fill: none;
   stroke-width: 1.8;
   stroke-linecap: round;
@@ -1008,47 +812,7 @@ html.dt-va-lock .dt-va {
   overflow-x: hidden;
 }
 @media (max-width: 600px) {
-  html,
-  body {
-    overflow-x: hidden;
-  }
-  .dt-va-tab {
-    top: auto !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    right: auto !important;
-    left: 0;
-    transform: none !important;
-    flex-direction: row;
-    align-items: center;
-    gap: 11px;
-    width: auto;
-    height: 58px;
-    padding: 6px 18px 6px 7px;
-    border-radius: 999px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-    transition: none;
-  }
-  .dt-va-tab:hover {
-    width: auto;
-  }
-  .dt-va-tab .dt-va-mark {
-    width: 44px;
-    height: 44px;
-    font-size: 15px;
-    border-radius: 100%;
-  }
-  .dt-va-tab .dt-va-lbl {
-    writing-mode: horizontal-tb;
-    transform: none;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0;
-  }
-  .dt-va-tab svg {
-    width: 22px;
-    height: 22px;
-  }
-  .dt-va {
+.dt-va {
     right: auto;
     bottom: auto;
     top: 0;
@@ -1061,13 +825,13 @@ html.dt-va-lock .dt-va {
     border: 0;
     font-size: 16px;
   }
-  .dt-va-head {
+.dt-va-head {
     background: var(--dt-va-accent);
     border-bottom: 0;
     padding: 12px 10px 12px 14px;
     gap: 12px;
   }
-  .dt-va-avatar {
+.dt-va-avatar {
     width: 44px;
     height: 44px;
     border-radius: 100%;
@@ -1075,59 +839,59 @@ html.dt-va-lock .dt-va {
     color: #000;
     font-size: 15px;
   }
-  .dt-va-who b {
+.dt-va-who b {
     font-size: 17px;
     line-height: 1.15;
     color: #fff;
   }
-  .dt-va-who small {
+.dt-va-who small {
     color: rgba(255, 255, 255, 0.85);
     font-size: 13px;
   }
-  .dt-va-who small i {
+.dt-va-who small i {
     background: #fff;
   }
-  .dt-va-who small i.dt-va-off {
+.dt-va-who small i.dt-va-off {
     background: rgba(255, 255, 255, 0.45);
   }
-  .dt-va-x,
+.dt-va-x,
   .dt-va-restart {
     color: #fff;
   }
-  .dt-va-x:hover,
+.dt-va-x:hover,
   .dt-va-restart:hover {
     background: rgba(0, 0, 0, 0.18);
     color: #fff;
   }
-  .dt-va-body {
+.dt-va-body {
     padding: 16px 14px 8px;
     gap: 12px;
   }
-  .dt-va-msg {
+.dt-va-msg {
     font-size: 16px;
   }
-  .dt-va-inputrow textarea {
+.dt-va-inputrow textarea {
     border-radius: 24px;
     padding: 12px 16px;
     min-height: 48px;
   }
-  .dt-va-send {
+.dt-va-send {
     width: 48px;
     height: 48px;
     border-radius: 100%;
     font-size: 20px;
   }
-  .dt-va-foot {
+.dt-va-foot {
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
-  .dt-va-links {
+.dt-va-links {
     font-size: 13px;
   }
-  .dt-va-links button {
+.dt-va-links button {
     font-size: 13px;
   }
 }
-/* 24/09/2026: Google rating line under the greeting */
+/* Google rating line under the greeting */
 .dt-va-rated {
   align-self: flex-start;
   display: inline-flex;
@@ -1155,230 +919,15 @@ html.dt-va-lock .dt-va {
   color: var(--dt-va-text);
 }
 @media (max-width: 600px) {
-  .dt-va-rated {
+.dt-va-rated {
     font-size: 13.5px;
   }
-  .dt-va-rated svg {
+.dt-va-rated svg {
     width: 72px;
     height: 13.5px;
   }
 }
-/* 24/09/2026: Google rating strip on the inner pages (dark), injected by the assistant script under the awards row / contact address */
-.dt-g-strip {
-  margin: 34px 0 0;
-  text-align: center;
-  line-height: 1;
-}
-.post-content .dt-g-strip {
-  margin: 8px 0 0;
-}
-.dt-g-strip a {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 22px 12px 20px;
-  border: 1px solid #3a3a3a;
-  border-radius: 999px;
-  background: transparent;
-  color: #fff;
-  text-decoration: none;
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1;
-  transition: border-color 0.25s ease;
-}
-.dt-g-strip a:hover,
-.dt-g-strip a:focus-visible {
-  border-color: #fff;
-  color: #fff;
-}
-.dt-g-strip a:focus-visible {
-  outline: 2px solid var(--dt-va-accent);
-  outline-offset: 3px;
-}
-.dt-g-strip .dt-g-w {
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  padding-right: 14px;
-  border-right: 1px solid #3a3a3a;
-  color: #fff;
-}
-.dt-g-strip .dt-g-s {
-  position: relative;
-  display: inline-block;
-  width: 128px;
-  height: 24px;
-  flex: 0 0 auto;
-}
-.dt-g-strip .dt-g-s svg {
-  display: block;
-  width: 128px;
-  height: 24px;
-}
-.dt-g-strip .dt-g-base {
-  position: absolute;
-  inset: 0;
-  color: #3a3a3a;
-}
-.dt-g-strip .dt-g-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  overflow: hidden;
-  color: var(--dt-va-accent);
-}
-/* c33 star fill: hard colours, the theme paints SVG paths inside links white */
-.dt-g-strip .dt-g-base svg path {
-  fill: #3a3a3a !important;
-}
-.dt-g-strip .dt-g-fill svg path {
-  fill: var(--dt-va-accent) !important;
-}
-.dt-g-strip .dt-g-n {
-  font-weight: 700;
-  font-size: 19px;
-  color: #fff;
-}
-.dt-g-strip .dt-g-c {
-  color: #9d9d9d;
-}
-@media (max-width: 640px) {
-  .dt-g-strip a {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px 12px;
-    padding: 14px 18px;
-    border-radius: 20px;
-    max-width: calc(100% - 8px);
-  }
-  .dt-g-strip .dt-g-w {
-    padding-right: 0;
-    border-right: 0;
-    flex-basis: 100%;
-    text-align: center;
-  }
-}
-/* 23/09/2026: nudge bubble, feedback row */
-.dt-va-nudge {
-  position: fixed;
-  z-index: 99989;
-  right: 80px;
-  top: 50%;
-  transform: translateY(-50%);
-  max-width: 280px;
-  background: var(--dt-va-panel);
-  color: var(--dt-va-text);
-  border: 1px solid var(--dt-va-border);
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  font-family: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 14.5px;
-  line-height: 1.4;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 4px 4px 4px 0;
-}
-.dt-va-nudge[hidden] {
-  display: none;
-}
-.dt-va-nudge::after {
-  content: "";
-  position: absolute;
-  right: -7px;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  background: var(--dt-va-panel);
-  border-right: 1px solid var(--dt-va-border);
-  border-top: 1px solid var(--dt-va-border);
-  transform: translateY(-50%) rotate(45deg);
-}
-.dt-va-nudge-body {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  padding: 12px 6px 12px 16px;
-  cursor: pointer;
-  border-radius: 12px;
-  line-height: 1.4;
-}
-.dt-va-nudge-body b {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-.dt-va-nudge-body:hover {
-  background: var(--dt-va-surface);
-}
-.dt-va-nudge-x {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: transparent;
-  color: var(--dt-va-muted);
-  font-size: 20px;
-  line-height: 1;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 4px;
-}
-.dt-va-nudge-x:hover {
-  background: #2a2a30;
-  color: var(--dt-va-text);
-}
-.dt-va-nudge.dt-va-in {
-  animation: dmVaNudge 0.35s ease-out;
-}
-@keyframes dmVaNudge {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dt-va-nudge.dt-va-in {
-    animation: none;
-  }
-}
-@media (max-width: 600px) {
-  .dt-va-nudge {
-    right: auto;
-    top: auto;
-    left: 50%;
-    bottom: calc(14px + 58px + 12px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    max-width: min(320px, calc(100% - 32px));
-    font-size: 16px;
-  }
-  .dt-va-nudge::after {
-    right: auto;
-    top: auto;
-    left: 50%;
-    bottom: -7px;
-    border-right: 1px solid var(--dt-va-border);
-    border-top: 0;
-    border-bottom: 1px solid var(--dt-va-border);
-    transform: translateX(-50%) rotate(45deg);
-  }
-  @keyframes dmVaNudge {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-}
+/* nudge bubble, feedback row */
 .dt-va-fb {
   align-self: flex-start;
   display: flex;
@@ -1405,4 +954,14 @@ html.dt-va-lock .dt-va {
 }
 .dt-va-fb span {
   padding: 4px 0;
+}
+@keyframes dmVaBlink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
 }

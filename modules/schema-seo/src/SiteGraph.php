@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit;
  * Yoast SEO does not provide the graph, so they never duplicate Yoast output.
  */
 final class SiteGraph {
-
 	/** Register frontend hooks. */
 	public function register_hooks() {
 		add_filter( SchemaGraph::FILTER, array( $this, 'add_pieces' ), 20 );
@@ -40,24 +39,34 @@ final class SiteGraph {
 			return $pieces;
 		}
 
-		$organization_id = SchemaGraph::id( 'organization' );
-		$has_organization = SchemaGraph::has_piece( $pieces, $organization_id );
-		$post             = is_singular() ? get_queried_object() : null;
-		$post             = $post instanceof \WP_Post ? $post : null;
+		// The site's publisher: the person it represents (Person mode), otherwise the business.
+		$publisher_id = '';
 
-		$pieces[] = $this->website( $has_organization ? $organization_id : '' );
+		foreach ( array( 'person', 'organization' ) as $key ) {
+			if ( SchemaGraph::has_piece( $pieces, SchemaGraph::id( $key ) ) ) {
+				$publisher_id = SchemaGraph::id( $key );
+
+				break;
+			}
+		}
+
+		$post = is_singular() ? get_queried_object() : null;
+		$post = $post instanceof \WP_Post ? $post : null;
+
+		$pieces[] = $this->website( $publisher_id );
 
 		$image = $post ? $this->primary_image( $post ) : array();
+
 		if ( $image ) {
 			$pieces[] = $image;
 		}
 
-		$pieces[] = $this->webpage( $post, $pieces, $has_organization ? $organization_id : '', $image );
+		$pieces[] = $this->webpage( $post, $pieces, $publisher_id, $image );
 
 		if ( $post && $this->is_article( $post ) ) {
 			$author = $this->person( (int) $post->post_author );
 
-			$pieces[] = $this->article( $post, $author, $has_organization ? $organization_id : '', $image );
+			$pieces[] = $this->article( $post, $author, $publisher_id, $image );
 
 			if ( $author ) {
 				$pieces[] = $author;
@@ -70,31 +79,21 @@ final class SiteGraph {
 	/**
 	 * Build the WebSite piece.
 	 *
-	 * @param string $organization_id Organization `@id`, or empty when absent.
+	 * @param string $publisher_id Publisher `@id` (Person or Organization), or empty when absent.
 	 * @return array
 	 */
-	private function website( $organization_id ) {
+	private function website( $publisher_id ) {
 		$website = array(
-			'@type'           => 'WebSite',
-			'@id'             => SchemaGraph::id( 'website' ),
-			'url'             => home_url( '/' ),
-			'name'            => $this->clean_text( get_bloginfo( 'name' ) ),
-			'description'     => $this->clean_text( get_bloginfo( 'description' ) ),
-			'inLanguage'      => get_bloginfo( 'language' ),
-			'potentialAction' => array(
-				array(
-					'@type'       => 'SearchAction',
-					'target'      => array(
-						'@type'       => 'EntryPoint',
-						'urlTemplate' => home_url( '/?s={search_term_string}' ),
-					),
-					'query-input' => 'required name=search_term_string',
-				),
-			),
+			'@type'       => 'WebSite',
+			'@id'         => SchemaGraph::id( 'website' ),
+			'url'         => home_url( '/' ),
+			'name'        => $this->clean_text( get_bloginfo( 'name' ) ),
+			'description' => $this->clean_text( get_bloginfo( 'description' ) ),
+			'inLanguage'  => get_bloginfo( 'language' ),
 		);
 
-		if ( '' !== $organization_id ) {
-			$website['publisher'] = array( '@id' => $organization_id );
+		if ( '' !== $publisher_id ) {
+			$website['publisher'] = array( '@id' => $publisher_id );
 		}
 
 		/**
@@ -110,11 +109,11 @@ final class SiteGraph {
 	 *
 	 * @param \WP_Post|null $post            Current singular post, if any.
 	 * @param array         $pieces          Pieces already in the graph.
-	 * @param string        $organization_id Organization `@id`, or empty when absent.
+	 * @param string        $publisher_id    Publisher `@id` (Person or Organization), or empty when absent.
 	 * @param array         $image           Primary image piece, if any.
 	 * @return array
 	 */
-	private function webpage( $post, array $pieces, $organization_id, array $image ) {
+	private function webpage( $post, array $pieces, $publisher_id, array $image ) {
 		$url     = SchemaGraph::current_url();
 		$webpage = array(
 			'@type'       => $this->webpage_type(),
@@ -137,11 +136,12 @@ final class SiteGraph {
 			$webpage['thumbnailUrl']       = $image['url'];
 		}
 
-		if ( '' !== $organization_id && is_front_page() ) {
-			$webpage['about'] = array( '@id' => $organization_id );
+		if ( '' !== $publisher_id && is_front_page() ) {
+			$webpage['about'] = array( '@id' => $publisher_id );
 		}
 
 		$breadcrumb_id = SchemaGraph::id( 'breadcrumb' );
+
 		if ( SchemaGraph::has_piece( $pieces, $breadcrumb_id ) ) {
 			$webpage['breadcrumb'] = array( '@id' => $breadcrumb_id );
 		}
@@ -152,7 +152,9 @@ final class SiteGraph {
 		 * @param array         $webpage WebPage piece.
 		 * @param \WP_Post|null $post    Current singular post, if any.
 		 */
-		return $this->remove_empty( (array) apply_filters( 'dovetail_studio_schema_webpage', $webpage, $post ) );
+		return $this->remove_empty(
+			(array) apply_filters( 'dovetail_studio_schema_webpage', $webpage, $post )
+		);
 	}
 
 	/**
@@ -193,7 +195,9 @@ final class SiteGraph {
 			return array();
 		}
 
-		$caption = $this->clean_text( (string) get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true ) );
+		$caption = $this->clean_text(
+			(string) get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true )
+		);
 
 		return $this->remove_empty(
 			array(
@@ -231,11 +235,11 @@ final class SiteGraph {
 	 *
 	 * @param \WP_Post $post            Current post.
 	 * @param array    $author          Author Person piece, if any.
-	 * @param string   $organization_id Organization `@id`, or empty when absent.
+	 * @param string   $publisher_id    Publisher `@id` (Person or Organization), or empty when absent.
 	 * @param array    $image           Primary image piece, if any.
 	 * @return array
 	 */
-	private function article( \WP_Post $post, array $author, $organization_id, array $image ) {
+	private function article( \WP_Post $post, array $author, $publisher_id, array $image ) {
 		$webpage_id = SchemaGraph::id( 'webpage' );
 		$headline   = $this->clean_text( get_the_title( $post ) );
 		$content    = $this->clean_text( (string) $post->post_content );
@@ -263,8 +267,8 @@ final class SiteGraph {
 			);
 		}
 
-		if ( '' !== $organization_id ) {
-			$article['publisher'] = array( '@id' => $organization_id );
+		if ( '' !== $publisher_id ) {
+			$article['publisher'] = array( '@id' => $publisher_id );
 		}
 
 		if ( $image ) {
@@ -278,7 +282,9 @@ final class SiteGraph {
 		 * @param array    $article Article piece.
 		 * @param \WP_Post $post    Current post.
 		 */
-		return $this->remove_empty( (array) apply_filters( 'dovetail_studio_schema_article', $article, $post ) );
+		return $this->remove_empty(
+			(array) apply_filters( 'dovetail_studio_schema_article', $article, $post )
+		);
 	}
 
 	/**
@@ -303,6 +309,7 @@ final class SiteGraph {
 		);
 
 		$website = esc_url_raw( (string) $user->user_url );
+
 		if ( '' !== $website ) {
 			$person['sameAs'] = array( $website );
 		}
@@ -327,7 +334,9 @@ final class SiteGraph {
 		 * @param array    $person Person piece.
 		 * @param \WP_User $user   Author.
 		 */
-		return $this->remove_empty( (array) apply_filters( 'dovetail_studio_schema_person', $person, $user ) );
+		return $this->remove_empty(
+			(array) apply_filters( 'dovetail_studio_schema_person', $person, $user )
+		);
 	}
 
 	/**
@@ -403,7 +412,11 @@ final class SiteGraph {
 	 */
 	private function remove_empty( array $data ) {
 		foreach ( $data as $key => $value ) {
-			if ( null === $value || '' === $value || false === $value || ( is_array( $value ) && array() === $value ) ) {
+			if ( null === $value
+				|| '' === $value
+				|| false === $value
+				|| ( is_array( $value ) && array() === $value )
+			) {
 				unset( $data[ $key ] );
 			}
 		}

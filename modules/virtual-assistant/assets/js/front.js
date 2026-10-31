@@ -4,36 +4,31 @@
   /* ================= CONFIG ================= */
   var DT_VA_CONFIG = {
     COMPANY_NAME: "Dovetail Consultancy",
+    /* Neutral defaults: set the real values under VA Enquiries > Settings > Company. The assistant stays hidden until the public phone and email are set. */
     COMPANY_TYPE: "Office",
-    COMPANY_ADDRESS: "The View, Malahide Marina Village, Co. Dublin",
-    COMPANY_CITY: "Malahide",
-    COMPANY_EMAIL: "info@designminds.ie",
-    COMPANY_PHONE_DISPLAY: "01 961 0034",
-    COMPANY_PHONE_TEL: "+35319610034",
-    WHATSAPP:
-      "353862548245" /* WhatsApp number, international format without +. Blank = no WhatsApp offered. */,
-    WHATSAPP_DISPLAY: "086 254 8245",
+    COMPANY_ADDRESS: "",
+    COMPANY_CITY: "",
+    COMPANY_EMAIL: "",
+    COMPANY_PHONE_DISPLAY: "",
+    COMPANY_PHONE_TEL: "",
+    WHATSAPP: "" /* WhatsApp number, international format without +. Blank = no WhatsApp offered. */,
+    WHATSAPP_DISPLAY: "",
     PRIVACY_URL: "/privacy-policy/",
-    WORK_URL: "/our-work/",
+    WORK_URL: "",
     RESPONSE_PROMISE: "within one working day",
     OPENING_HOURS: {
       open: 9,
       close: 17.5,
       days: [1, 2, 3, 4, 5],
-    } /* Dublin, Mon to Fri 09:00 to 17:30 */,
-    BOOKING_URL:
-      "" /* Calendly or Google Calendar appointment link. Blank = no diary booking offered. */,
-    GOOGLE_RATING:
-      "5.0" /* Google Business Profile, 24/09/2026. Blank = no rating line. */,
-    GOOGLE_REVIEWS: 18,
-    GOOGLE_URL:
-      "https://www.google.com/maps?cid=3424694600460002421" /* the Business Profile on Maps (place CID); reviews are on the card */,
+    } /* site time zone; days 0 = Sunday ... 6 = Saturday */,
+    BOOKING_URL: "" /* Calendly or Google Calendar appointment link. Blank = no diary booking offered. */,
+    GOOGLE_RATING: "" /* Google Business Profile rating. Blank = no rating line. */,
+    GOOGLE_REVIEWS: 0,
+    GOOGLE_URL: "" /* Google Maps profile URL */,
     RESUME_HOURS: 24 /* Remember an unfinished conversation in this browser for this long */,
     ANALYTICS: true /* gtag / dataLayer events, prefixed dt_va_ */,
-    /* Case studies are Design Minds' own portfolio; showing it to a different company's
-       visitors would be actively wrong. Left empty by default — work() already skips
-       straight to money() when both are empty, so no other code needs to change. Add
-       your own via a future admin screen, or edit these two literals directly for now. */
+    /* Case studies come from VA Enquiries > Settings > Portfolio. Empty by default: work() skips
+       straight to money() when both are empty. */
     CASE_STUDIES: {},
     CASE_STUDIES_TAGGED: [],
   };
@@ -41,6 +36,20 @@
 
   var C = DT_VA_CONFIG,
     S = window.DT_VA_SERVER || null;
+  /* ---------- translations: msgids are extracted to src/services/i18n-js.php (tools/build.php)
+     and translated with the plugin's .po files; English is the fallback ---------- */
+  var I18N = (S && S.i18n) || {};
+  function __(text) {
+    return Object.prototype.hasOwnProperty.call(I18N, text) ? I18N[text] : text;
+  }
+  /* __() with %s / %1$s placeholders, like PHP's sprintf(). */
+  function _f(text) {
+    var args = arguments,
+      i = 0;
+    return __(text).replace(/%(?:(\d+)\$)?s/g, function (m, n) {
+      return String(n ? args[parseInt(n, 10)] : args[++i]);
+    });
+  }
   if (S && typeof S.companyName === "string" && S.companyName.trim())
     C.COMPANY_NAME = S.companyName.trim();
   C.AI_ASSISTANT_NAME = "";
@@ -124,14 +133,10 @@
     pendingBeforeAsk: null,
   };
   var LABEL = {
-    enquiry: "Enquiry",
-    client: "Existing client",
-    other: "Something else",
+    enquiry: __("Enquiry"),
+    client: __("Existing client"),
+    other: __("Something else"),
   };
-  var QUOTE =
-    "\n\nA fixed quote follows once the " +
-    esc(C.COMPANY_NAME) +
-    " team has seen your brief.";
   var PHONE_LINK =
     '<a href="tel:' +
     C.COMPANY_PHONE_TEL +
@@ -140,7 +145,7 @@
     "</a>";
   /* falls back to Office when blank, matching the field's server-side validation */
   function typeWord(cap) {
-    var t = (C.COMPANY_TYPE || "Office").trim() || "Office";
+    var t = (C.COMPANY_TYPE || __("Office")).trim() || __("Office");
     return cap
       ? t.charAt(0).toUpperCase() + t.slice(1)
       : t.charAt(0).toLowerCase() + t.slice(1);
@@ -152,9 +157,7 @@
       "?text=" +
       encodeURIComponent(
         text ||
-          "Hello " +
-            C.COMPANY_NAME +
-            ", I was on your website and I'd like to talk about a project.",
+          _f("Hello %s, I was on your website and I'd like to talk about a project.", C.COMPANY_NAME),
       )
     );
   }
@@ -169,38 +172,37 @@
     if (!C.WHATSAPP) return [];
     return [
       {
-        label: "WhatsApp the " + typeWord(),
+        label: _f("WhatsApp the %s", typeWord()),
         go: function () {
-          var ref = state.ref ? " (ref " + state.ref + ")" : "";
+          var ref = state.ref ? " " + _f("(ref %s)", state.ref) : "";
           track("whatsapp");
           window.open(
             waUrl(
-              "Hello " +
-                C.COMPANY_NAME +
-                ", I was chatting with the assistant on your website" +
-                ref +
-                " and I'd like to talk about " +
-                (LABEL[state.service]
+              _f(
+                "Hello %1$s, I was chatting with the assistant on your website%2$s and I'd like to talk about %3$s.",
+                C.COMPANY_NAME,
+                ref,
+                LABEL[state.service]
                   ? LABEL[state.service].toLowerCase()
-                  : "a project") +
-                ".",
+                  : __("a project"),
+              ),
             ),
             "_blank",
             "noopener",
           );
           bot(
-            "WhatsApp is open in a new tab. The team read it during " +
-              typeWord() +
-              " hours, Monday to Friday.",
+            (daysLabel()
+              ? _f("WhatsApp is open in a new tab. The team reads it during %1$s hours, %2$s.", typeWord(), daysLabel())
+              : _f("WhatsApp is open in a new tab. The team reads it during %s hours.", typeWord())),
             function () {
               setChips([
                 {
-                  label: "Ask the team to ring me",
+                  label: __("Ask the team to call me"),
                   go: function () {
                     callback();
                   },
                 },
-                { label: "Back to the questions", go: start },
+                { label: __("Back to the questions"), go: start },
               ]);
             },
           );
@@ -226,123 +228,159 @@
           name,
         )
       ) {
-        var ev = JSON.stringify({
-          n: name,
-          door: p.door,
-          step: p.step || "",
-          useful: p.useful || "",
-          ok: p.ok,
-          why: p.why || "",
-          page: location.pathname.slice(0, 80),
+        getToken(function (token) {
+          if (!token) return;
+          var ev = JSON.stringify({
+            n: name,
+            door: p.door,
+            step: p.step || "",
+            useful: p.useful || "",
+            ok: p.ok,
+            why: p.why || "",
+            page: location.pathname.slice(0, 80),
+            token: token,
+          });
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon(S.event, new Blob([ev], { type: "text/plain" }));
+          } else if (window.fetch) {
+            fetch(S.event, {
+              method: "POST",
+              body: ev,
+              keepalive: true,
+              credentials: "same-origin",
+            }).catch(function () {});
+          }
         });
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(S.event, new Blob([ev], { type: "text/plain" }));
-        } else if (window.fetch) {
-          fetch(S.event, {
-            method: "POST",
-            body: ev,
-            keepalive: true,
-            credentials: "same-origin",
-          }).catch(function () {});
-        }
       }
     } catch (e) {}
   }
 
-  /* ---------- opening hours (Dublin) ---------- */
-  function studioOpen() {
+  /* ---------- opening hours, in the site time zone (Settings > General) ---------- */
+  var HOURS = (S && S.hours) || {};
+  var DAY_NAMES = [
+    __("Sunday"),
+    __("Monday"),
+    __("Tuesday"),
+    __("Wednesday"),
+    __("Thursday"),
+    __("Friday"),
+    __("Saturday"),
+  ];
+  function nowParts() {
     try {
-      var parts = new Intl.DateTimeFormat("en-IE", {
-        timeZone: "Europe/Dublin",
+      var parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: HOURS.timezone || "UTC",
         weekday: "short",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
         hour: "numeric",
         minute: "numeric",
-        hour12: false,
+        hourCycle: "h23",
       }).formatToParts(new Date());
       var map = {};
       parts.forEach(function (p) {
         map[p.type] = p.value;
       });
-      var day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
-        map.weekday,
-      );
-      var h = parseInt(map.hour, 10) + parseInt(map.minute, 10) / 60;
-      return (
-        C.OPENING_HOURS.days.indexOf(day) > -1 &&
-        h >= C.OPENING_HOURS.open &&
-        h < C.OPENING_HOURS.close
-      );
-    } catch (e) {
-      return true;
-    }
-  }
-  /* c28: when the studio next opens, for the out-of-hours wording. 'today' (before 9am on a working day), 'tomorrow', or a day name. */
-  function nextOpen() {
-    try {
-      var parts = new Intl.DateTimeFormat("en-IE", {
-        timeZone: "Europe/Dublin",
-        weekday: "short",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: false,
-      }).formatToParts(new Date());
-      var map = {};
-      parts.forEach(function (p) {
-        map[p.type] = p.value;
-      });
-      var names = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      var day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+      return {
+        day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
           map.weekday,
         ),
-        h = parseInt(map.hour, 10) + parseInt(map.minute, 10) / 60;
-      if (C.OPENING_HOURS.days.indexOf(day) > -1 && h < C.OPENING_HOURS.open)
-        return "today";
-      var n = day;
-      for (var i = 0; i < 7; i++) {
-        n = (n + 1) % 7;
-        if (C.OPENING_HOURS.days.indexOf(n) > -1)
-          return i === 0 ? "tomorrow" : names[n];
+        h: (parseInt(map.hour, 10) % 24) + parseInt(map.minute, 10) / 60,
+        utc: Date.UTC(+map.year, +map.month - 1, +map.day),
+      };
+    } catch (e) {
+      // A manual UTC offset (e.g. "+01:00") that this browser's Intl does not accept.
+      var d = new Date(Date.now() + (HOURS.tzOffset || 0) * 60000);
+      return {
+        day: d.getUTCDay(),
+        h: d.getUTCHours() + d.getUTCMinutes() / 60,
+        utc: Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+      };
+    }
+  }
+  /* A site-time-zone calendar day (midnight UTC of that date) as YYYY-MM-DD. */
+  function ymd(utc) {
+    return new Date(utc).toISOString().slice(0, 10);
+  }
+  /* An open weekday that is not a closed date (Settings > Company > Opening hours). */
+  function openDay(utc) {
+    var day = new Date(utc).getUTCDay(),
+      date = ymd(utc),
+      closed = C.OPENING_HOURS.closed || [];
+    if (C.OPENING_HOURS.days.indexOf(day) < 0) return false;
+    for (var i = 0; i < closed.length; i++) {
+      if (closed[i] && date >= closed[i].from && date <= closed[i].to) return false;
+    }
+    return true;
+  }
+  function studioOpen() {
+    var n = nowParts();
+    return (
+      openDay(n.utc) &&
+      n.h >= C.OPENING_HOURS.open &&
+      n.h < C.OPENING_HOURS.close
+    );
+  }
+  /* When the office next opens: 'today' (before opening on an open day), 'tomorrow', a day name within the
+     coming week, a date further ahead (after a closure), or 'the next working day'. */
+  function nextOpen() {
+    var n = nowParts();
+    if (openDay(n.utc) && n.h < C.OPENING_HOURS.open) return "today";
+    for (var i = 1; i <= 90; i++) {
+      var utc = n.utc + i * 864e5;
+      if (!openDay(utc)) continue;
+      if (i === 1) return "tomorrow";
+      if (i < 7) return DAY_NAMES[new Date(utc).getUTCDay()];
+      try {
+        return new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
+          day: "numeric",
+          month: "long",
+          timeZone: "UTC",
+        }).format(new Date(utc));
+      } catch (e) {
+        return ymd(utc);
       }
-    } catch (e) {}
+    }
     return "the next working day";
+  }
+  function openTime() {
+    if (HOURS.openLabel) return HOURS.openLabel;
+    var h = C.OPENING_HOURS.open,
+      m = Math.round((h - Math.floor(h)) * 60);
+    return Math.floor(h) + ":" + (m < 10 ? "0" : "") + m;
+  }
+  /* "Monday to Friday" / "Mon to Fri", from the saved open days. */
+  function daysLabel(short) {
+    return (short ? HOURS.daysShort : HOURS.daysLabel) || "";
   }
   function reopens() {
     var n = nextOpen();
     return n === "today"
-      ? "at 9am today"
+      ? _f("at %s today", openTime())
       : n === "tomorrow"
-        ? "at 9am tomorrow"
+        ? _f("at %s tomorrow", openTime())
         : n === "the next working day"
-          ? "on the next working day"
-          : "on " + n + " at 9am";
+          ? __("on the next working day")
+          : _f("on %1$s at %2$s", n, openTime());
   }
   function whenLabel() {
     var n = nextOpen();
     return n === "today"
-      ? "Today"
+      ? __("Today")
       : n === "tomorrow"
-        ? "Tomorrow"
+        ? __("Tomorrow")
         : n === "the next working day"
-          ? "Next working day"
+          ? __("Next working day")
           : n;
   }
   function setStatus() {
     var s = $("dt-va-status");
     if (!s) return;
     s.innerHTML = studioOpen()
-      ? "<i></i>Read by the " + esc(C.COMPANY_NAME) + " team"
+      ? "<i></i>" + _f("Read by the %s team", esc(C.COMPANY_NAME))
       : '<i class="dt-va-off"></i>' +
-        typeWord(true) +
-        " reopens " +
-        esc(reopens());
+        _f("%1$s reopens %2$s", typeWord(true), esc(reopens()));
   }
   /* c28: campaign source from the link that brought the visitor (?src= or utm_*), kept for the visit. */
   function source() {
@@ -366,11 +404,13 @@
       esc(C.GOOGLE_URL || "#") +
       '" target="_blank" rel="noopener"><svg viewBox="0 0 128 24" aria-hidden="true">' +
       p +
-      "</svg><span><b>" +
-      esc(C.GOOGLE_RATING) +
-      "</b> on Google from " +
-      esc(String(C.GOOGLE_REVIEWS == null ? "" : C.GOOGLE_REVIEWS)) +
-      " reviews</span></a>"
+      "</svg><span>" +
+      _f(
+        "<b>%1$s</b> on Google from %2$s reviews",
+        esc(C.GOOGLE_RATING),
+        esc(String(C.GOOGLE_REVIEWS == null ? "" : C.GOOGLE_REVIEWS)),
+      ) +
+      "</span></a>"
     );
   }
   function askRated(html, list, freeText) {
@@ -433,7 +473,7 @@
     body.appendChild(m);
     scroll();
     state.history.push({ role: "user", content: text });
-    state.transcript.push("Client: " + text);
+    state.transcript.push(__("Client") + ": " + text);
   }
   function sys(text) {
     var m = el('<div class="dt-va-sys"></div>');
@@ -457,7 +497,7 @@
       scroll();
       var p = plain(html);
       state.history.push({ role: "assistant", content: p });
-      state.transcript.push("Assistant: " + p);
+      state.transcript.push(__("Assistant") + ": " + p);
       if (cb) cb();
     }, wait);
   }
@@ -511,13 +551,22 @@
           v: 2,
           ts: Date.now(),
           service: state.service,
-          answers: state.answers,
+          answers: withoutContact(state.answers),
           step: state.step,
           history: state.history.slice(-12),
           transcript: state.transcript.slice(-40),
         }),
       );
     } catch (e) {}
+  }
+  /* Contact details never stay in the browser: a shared computer would show them to the next person. */
+  function withoutContact(answers) {
+    var out = {};
+    Object.keys(answers || {}).forEach(function (k) {
+      if (["name", "email", "phone", "company", "time"].indexOf(k) === -1)
+        out[k] = answers[k];
+    });
+    return out;
   }
   function saved() {
     try {
@@ -578,6 +627,61 @@
       '<a href="$1" target="_blank" rel="noopener">$1</a>',
     );
   }
+  /* ---------- visitor token for /ask and /submit (signed by the server, valid two hours) ---------- */
+  /* Kept for the tab's session, so moving between pages does not cost a new /token request. */
+  var tokenState = { value: "", at: 0, waiting: null };
+  try {
+    var savedToken = JSON.parse(sessionStorage.getItem("dt_va_token") || "null");
+    if (savedToken && typeof savedToken.value === "string") {
+      tokenState.value = savedToken.value;
+      tokenState.at = +savedToken.at || 0;
+    }
+  } catch (e) {}
+  function getToken(cb) {
+    if (!S || !S.token || !window.fetch) return cb("");
+    if (tokenState.value && Date.now() - tokenState.at < 90 * 60 * 1000)
+      return cb(tokenState.value);
+    if (tokenState.waiting) return tokenState.waiting.push(cb);
+    tokenState.waiting = [cb];
+    fetch(S.token, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (j) {
+        if (j && typeof j.token === "string") {
+          tokenState.value = j.token;
+          tokenState.at = Date.now();
+          try {
+            sessionStorage.setItem("dt_va_token", JSON.stringify({ value: tokenState.value, at: tokenState.at }));
+          } catch (e) {}
+        }
+      })
+      .catch(function () {})
+      .then(function () {
+        var list = tokenState.waiting || [];
+        tokenState.waiting = null;
+        list.forEach(function (f) {
+          f(tokenState.value);
+        });
+      });
+  }
+  function resetToken() {
+    tokenState.value = "";
+    tokenState.at = 0;
+    try {
+      sessionStorage.removeItem("dt_va_token");
+    } catch (e) {}
+  }
+  /* /submit refuses tokens younger than 3 seconds, so wait out the rest if the panel was opened a moment ago. */
+  function getAgedToken(cb) {
+    getToken(function (t) {
+      var wait = 3500 - (Date.now() - tokenState.at);
+      if (!t || wait <= 0) return cb(t);
+      setTimeout(function () {
+        cb(t);
+      }, wait);
+    });
+  }
   function askModel(q, then) {
     state.asked = (state.asked || 0) + 1;
     if (S && S.askEnabled && window.fetch) {
@@ -610,26 +714,39 @@
         history[history.length - 1].content === q
       )
         history.pop();
-      var options = {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          q: q,
-          door: LABEL[state.service] || "",
-          history: history,
-        }),
+      var send = function (token, retry) {
+        var options = {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            q: q,
+            door: LABEL[state.service] || "",
+            history: history,
+            token: token,
+          }),
+        };
+        if (controller) options.signal = controller.signal;
+        fetch(S.ask, options)
+          .then(function (r) {
+            if (r.status === 403 && retry) {
+              // Expired token, or the visitor's IP changed: fetch a new one once.
+              resetToken();
+              getToken(function (t) {
+                send(t, false);
+              });
+              return undefined;
+            }
+            if (!r.ok) throw new Error("Assistant unavailable");
+            return r.json().then(finish);
+          })
+          .catch(function () {
+            finish(null);
+          });
       };
-      if (controller) options.signal = controller.signal;
-      fetch(S.ask, options)
-        .then(function (r) {
-          if (!r.ok) throw new Error("Assistant unavailable");
-          return r.json();
-        })
-        .then(finish)
-        .catch(function () {
-          finish(null);
-        });
+      getToken(function (t) {
+        send(t, true);
+      });
     } else if (typeof window.DT_VA_MOCK_ASK === "function") {
       bot(linkify(window.DT_VA_MOCK_ASK(q)), withFeedback(q, then));
     } else fallbackAnswer(q, then);
@@ -660,63 +777,56 @@
     }
     /* Generic built-in fallback: every answer is built from Settings > Company fields
        already collected (phone, email, address, opening hours, Google rating), never
-       from Design Minds-specific facts. Business-specific FAQ content (services, process,
+       from facts about a specific business. Business-specific FAQ content (services, process,
        policies) has no field to draw from, so it belongs in the admin's Offline FAQ, not
        here — this list stays short and true for any company that filled in Settings. */
     var T = [
       [
         / (contact details|contact info|how (do|can) i (contact|reach|get in touch|email|phone)|get in touch|phone number|your number|telephone|email address|your email|how to contact|contact you|reach you|speak to someone|talk to someone) /,
         (C.COMPANY_PHONE_DISPLAY
-          ? "Phone " + C.COMPANY_PHONE_DISPLAY + ". "
+          ? _f("Phone %s.", C.COMPANY_PHONE_DISPLAY) + " "
           : "") +
           (C.WHATSAPP && C.WHATSAPP_DISPLAY
-            ? "WhatsApp " + C.WHATSAPP_DISPLAY + ". "
+            ? _f("WhatsApp %s.", C.WHATSAPP_DISPLAY) + " "
             : "") +
-          (C.COMPANY_EMAIL ? "Email " + C.COMPANY_EMAIL + ". " : "") +
-          "Or leave your details here and one of the team will ring you.",
+          (C.COMPANY_EMAIL ? _f("Email %s.", C.COMPANY_EMAIL) + " " : "") +
+          __("Or leave your details here and one of the team will call you."),
       ],
       [
         / (opening hours|opening times|open times|office hours|business hours|your hours|what hours|hours of business|what time do you (open|close)|when do you (open|close)|are you open|when are you open|open (today|tomorrow|now|on|at|saturday|sunday|weekend|late)|when can i (ring|call|phone)|best time to (ring|call|phone)) /,
         (studioOpen()
-          ? typeWord(true) + " is open now"
-          : typeWord(true) + " is closed right now and reopens " + reopens()) +
-          (C.COMPANY_PHONE_DISPLAY
-            ? ", on " + C.COMPANY_PHONE_DISPLAY + "."
-            : ".") +
-          " Outside opening hours leave your details here and the team will pick them up on the next working day.",
+          ? C.COMPANY_PHONE_DISPLAY
+            ? _f("%1$s is open now, on %2$s.", typeWord(true), C.COMPANY_PHONE_DISPLAY)
+            : _f("%s is open now.", typeWord(true))
+          : C.COMPANY_PHONE_DISPLAY
+            ? _f("%1$s is closed right now and reopens %2$s, on %3$s.", typeWord(true), reopens(), C.COMPANY_PHONE_DISPLAY)
+            : _f("%1$s is closed right now and reopens %2$s.", typeWord(true), reopens())) +
+          " " +
+          __("Outside opening hours leave your details here and the team will pick them up on the next working day."),
       ],
       [
         / (meet (in person|up|you|face to face)|in person|face to face|come (in|out|and see|to see)|call in|visit (you|the office|your office)|pop in|drop in|site visit|come to (us|our office)|address|eircode|postcode|zip code|location|located|based in|where are you|where (is|are) (the )?(office|studio|shop|you)|your location|find you|directions|parking) /,
         C.COMPANY_ADDRESS
-          ? "Yes, you're welcome to visit. " +
-            esc(C.COMPANY_NAME) +
-            " is at " +
-            esc(C.COMPANY_ADDRESS) +
-            (C.COMPANY_PHONE_DISPLAY
-              ? ". Ring " + C.COMPANY_PHONE_DISPLAY + " to arrange it."
-              : ".")
-          : "Leave your details here and the team will get back to you with the best way to meet.",
+          ? (C.COMPANY_PHONE_DISPLAY
+            ? _f("Yes, you're welcome to visit. %1$s is at %2$s. Call %3$s to arrange it.", esc(C.COMPANY_NAME), esc(C.COMPANY_ADDRESS), C.COMPANY_PHONE_DISPLAY)
+            : _f("Yes, you're welcome to visit. %1$s is at %2$s.", esc(C.COMPANY_NAME), esc(C.COMPANY_ADDRESS)))
+          : __("Leave your details here and the team will get back to you with the best way to meet."),
       ],
       [
         / (reviews?|rating|rated|testimonials?|feedback|what (do|did) (your )?clients say|why (should|would) (we|i) (choose|pick|use|go with)|why choose|recommend(ed)?|reputation|trust you|any good|are you good) /,
         C.GOOGLE_RATING
-          ? esc(C.COMPANY_NAME) +
-            " is rated " +
-            esc(C.GOOGLE_RATING) +
-            " on Google" +
-            (C.GOOGLE_REVIEWS
-              ? " from " + esc(String(C.GOOGLE_REVIEWS)) + " reviews"
-              : "") +
-            "."
-          : "Ask the team for references or recent reviews when they come back to you.",
+          ? C.GOOGLE_REVIEWS
+            ? _f("%1$s is rated %2$s on Google from %3$s reviews.", esc(C.COMPANY_NAME), esc(C.GOOGLE_RATING), esc(String(C.GOOGLE_REVIEWS)))
+            : _f("%1$s is rated %2$s on Google.", esc(C.COMPANY_NAME), esc(C.GOOGLE_RATING))
+          : __("Ask the team for references or recent reviews when they come back to you."),
       ],
       [
         / (cost|costs|price|prices|pricing|how much|budget|fee|fees|rates|charge|charges|expensive|afford|quote|quotation|estimate|ballpark) /,
-        "Cost follows scope, so nothing is priced until the brief is understood. Tell me what you're looking at and the budget you have in mind, and the team will come back with a quote.",
+        __("Cost follows scope, so nothing is priced until the brief is understood. Tell me what you're looking at and the budget you have in mind, and the team will come back with a quote."),
       ],
       [
         / (services|what do you (do|offer|provide|supply|make|specialise in|specialize in)|what can you (do|help|offer)|what you do|what are you (good|best) at|specialities|specialties|capabilities|do you (do|make|design|build|offer|handle|supply|provide)|can you (do|make|design|build|help with|handle)|are you able to) /,
-        "Tell me a bit about what you're looking for and I can point you in the right direction, or pick one of the options below.",
+        __("Tell me a bit about what you're looking for and I can point you in the right direction, or pick one of the options below."),
       ],
     ];
     for (var i = 0; i < T.length; i++) {
@@ -727,19 +837,25 @@
   function withFeedback(q, then) {
     return function () {
       var row = el(
-        '<div class="dt-va-fb"><span>Useful?</span><button type="button">Yes</button><button type="button">No</button></div>',
+        '<div class="dt-va-fb"><span>' +
+          __("Useful?") +
+          '</span><button type="button">' +
+          __("Yes") +
+          '</button><button type="button">' +
+          __("No") +
+          "</button></div>",
       );
       var btns = row.querySelectorAll("button");
       function vote(v) {
         track("feedback", { useful: v });
         state.transcript.push(
-          'Feedback on "' + String(q || "").slice(0, 100) + '": ' + v,
+          _f('Feedback on "%1$s": %2$s', String(q || "").slice(0, 100), v),
         );
         row.innerHTML =
           "<span>" +
           (v === "yes"
-            ? "Thanks."
-            : "Noted, the team will improve that answer.") +
+            ? __("Thanks.")
+            : __("Noted, the team will improve that answer.")) +
           "</span>";
       }
       btns[0].onclick = function () {
@@ -762,11 +878,11 @@
     state.answers.notes =
       (state.answers.notes ? state.answers.notes + " " : "") + q;
     bot(
-      "I've added that question to your brief so the team can answer it properly when they reply. If it's urgent, the " +
-        typeWord() +
-        " is on " +
-        PHONE_LINK +
-        ".",
+      _f(
+        "I've added that question to your brief so the team can answer it properly when they reply. If it's urgent, the %1$s is on %2$s.",
+        typeWord(),
+        PHONE_LINK,
+      ),
       then,
     );
   }
@@ -780,7 +896,7 @@
       setChips(chipsWere);
       state.pending = pendingWas;
       if (!chipsWere.length) input.focus();
-    } else setChips([{ label: "Start again", go: start }]);
+    } else setChips([{ label: __("Start again"), go: start }]);
   }
 
   /* ---------- flow ---------- */
@@ -800,46 +916,40 @@
     at("open");
     state.asked = 0;
     var openLine = studioOpen()
-      ? "If you'd rather talk now, the " +
-        typeWord() +
-        " is on " +
-        PHONE_LINK +
-        ", Monday to Friday."
-      : "The " +
-        typeWord() +
-        " is closed at the moment and reopens " +
-        reopens() +
-        ". You can leave everything here and the team will pick it up then, or ring " +
-        PHONE_LINK +
-        " during office hours.";
-    var assistantIntro = C.AI_ASSISTANT_NAME
-      ? "I'm <strong>" +
-        esc(C.AI_ASSISTANT_NAME) +
-        "</strong> the AI Assistant at "
-      : "I'm the AI Assistant at ";
+      ? daysLabel()
+        ? _f("If you'd rather talk now, the %1$s is on %2$s, %3$s.", typeWord(), PHONE_LINK, daysLabel())
+        : _f("If you'd rather talk now, the %1$s is on %2$s.", typeWord(), PHONE_LINK)
+      : _f(
+          "The %1$s is closed at the moment and reopens %2$s. You can leave everything here and the team will pick it up then, or call %3$s during office hours.",
+          typeWord(),
+          reopens(),
+          PHONE_LINK,
+        );
+    var hello = C.AI_ASSISTANT_NAME
+      ? _f("Hello. I'm <strong>%1$s</strong> the AI Assistant at %2$s.", esc(C.AI_ASSISTANT_NAME), esc(C.COMPANY_NAME))
+      : _f("Hello. I'm the AI Assistant at %s.", esc(C.COMPANY_NAME));
     if (phoneWidth()) {
       askRated(
-        "<b>Hello. " +
-          assistantIntro +
-          esc(C.COMPANY_NAME) +
-          ".</b> Not a person, but the team reads everything you tell me. Ask me anything about how we work, or pick what you're looking at.",
+        "<b>" +
+          hello +
+          "</b> " +
+          __("Not a person, but the team reads everything you tell me. Ask me anything about how we work, or pick what you're looking at."),
         doors(),
         routeFree,
       );
     } else {
       askRated(
-        "Hello. " +
-          assistantIntro +
-          esc(C.COMPANY_NAME) +
-          ". I'm not a person, but everything you tell me is read by the " +
-          esc(C.COMPANY_NAME) +
-          " team. I can answer questions about how we work, show you projects like yours, and take the details of your job so the " +
-          esc(C.COMPANY_NAME) +
-          " team can come back to you properly, usually " +
-          C.RESPONSE_PROMISE +
-          ".\n\n" +
+        hello +
+          " " +
+          _f(
+            "I'm not a person, but everything you tell me is read by the %1$s team. I can answer questions about how we work, show you projects like yours, and take the details of your job so the %1$s team can come back to you properly, usually %2$s.",
+            esc(C.COMPANY_NAME),
+            C.RESPONSE_PROMISE,
+          ) +
+          "\n\n" +
           openLine +
-          "\n\nWhat are you looking at?",
+          "\n\n" +
+          __("What are you looking at?"),
         doors(),
         routeFree,
       );
@@ -923,7 +1033,7 @@
       };
     else
       go = function () {
-        goToStep(cfg.service + "1");
+        openService(cfg.service, cfg.label);
       };
     return {
       label: cfg.label,
@@ -931,42 +1041,53 @@
       sub:
         cfg.sub ||
         (cfg.action === "human"
-          ? "Ring the " + typeWord() + " or ask for a call back"
+          ? _f("Call the %s or ask for a call back", typeWord())
           : ""),
       ico: cfg.icon,
       human: cfg.action === "human",
       go: go,
     };
   }
+  /* A door's service: remembered for the brief, the email subject and the digest, then its first step. The built-in
+     enquiry1/client1 steps do this themselves through service(); a step set in the admin does not, so it is done here. */
+  function openService(name, label) {
+    var steps = S && S.flowConfig && S.flowConfig.steps;
+    if (!LABEL[name] && label) LABEL[name] = label;
+    if (steps && steps[name + "1"]) {
+      state.service = name;
+      track("door");
+    }
+    goToStep(name + "1");
+  }
   function defaultDoors() {
     return [
       {
-        label: "Enquire about a product or service",
-        sub: "Tell us what you're looking for",
+        label: __("Enquire about a product or service"),
+        sub: __("Tell us what you're looking for"),
         ico: "logo",
         go: function () {
-          goToStep("enquiry1");
+          openService("enquiry");
         },
       },
       {
-        label: "I'm already a client",
-        sub: "Changes, updates or an account query",
+        label: __("I'm already a client"),
+        sub: __("Changes, updates or an account query"),
         ico: "client",
         go: function () {
-          goToStep("client1");
+          openService("client");
         },
       },
       {
-        label: "Something else",
-        sub: "Or just ask me a question",
+        label: __("Something else"),
+        sub: __("Or just ask me a question"),
         ico: "other",
         go: function () {
           other();
         },
       },
       {
-        label: "I'd rather talk to a person",
-        sub: "Ring the " + typeWord() + " or ask for a call back",
+        label: __("I'd rather talk to a person"),
+        sub: _f("Call the %s or ask for a call back", typeWord()),
         ico: "human",
         human: true,
         go: human,
@@ -987,7 +1108,9 @@
   }
   function renderDoors(list) {
     var wrap = el(
-      '<div class="dt-va-doors" role="group" aria-label="What are you looking at?"></div>',
+      '<div class="dt-va-doors" role="group" aria-label="' +
+        esc(__("What are you looking at?")) +
+        '"></div>',
     );
     list.forEach(function (c) {
       var b = el(
@@ -1064,22 +1187,33 @@
     if (s === "client") {
       at("client1");
       ask(
-        "Welcome back. What do you need?",
+        __("Welcome back. What do you need?"),
         [
-          {
-            label: "A change to an existing order or service",
-            go: setThen("type", toDescribe),
-          },
-          { label: "A repeat order", go: setThen("type", toDescribe) },
-          {
-            label: "An invoice or account query",
-            go: setThen("type", toDescribe),
-          },
-          { label: "Something new", go: setThen("type", toDescribe) },
+          { label: CLIENT_TYPES.change, go: setThen("type", toDescribe) },
+          { label: CLIENT_TYPES.repeat, go: setThen("type", toDescribe) },
+          { label: CLIENT_TYPES.invoice, go: setThen("type", toDescribe) },
+          { label: CLIENT_TYPES.fresh, go: setThen("type", toDescribe) },
         ],
         setThen("type", toDescribe),
       );
     }
+  }
+  /* Chip labels for existing clients; clientType() maps a chosen label (or typed text) back to its key. */
+  var CLIENT_TYPES = {
+    change: __("A change to an existing order or service"),
+    repeat: __("A repeat order"),
+    invoice: __("An invoice or account query"),
+    fresh: __("Something new"),
+  };
+  function clientType() {
+    var t = state.answers.type || "",
+      k;
+    for (k in CLIENT_TYPES) if (CLIENT_TYPES[k] === t) return k;
+    t = t.toLowerCase();
+    if (/repeat/.test(t)) return "repeat";
+    if (/invoice|account/.test(t)) return "invoice";
+    if (/something new/.test(t)) return "fresh";
+    return "change";
   }
   STEPS.enquiry1 = function () {
     service("enquiry");
@@ -1093,7 +1227,7 @@
     if (
       state.service === "client" &&
       !state.answers.project &&
-      !/something new/i.test(state.answers.type || "")
+      clientType() !== "fresh"
     ) {
       var cq = clientQ();
       ask(cq.project, [], function (v) {
@@ -1108,10 +1242,8 @@
       q = cq2.changes;
       eg = cq2.eg;
     } else {
-      q =
-        "Tell me a little about the business and who it's for. A line or two is plenty.";
-      eg =
-        'For example: "Physiotherapy clinic opening in Cork, private patients, two practitioners."';
+      q = __("Tell me a little about the business and who it's for. A line or two is plenty.");
+      eg = __('For example: "New café opening downtown, aimed at students and young professionals."');
     }
     ask(q + "\n\n" + eg, [], function (v) {
       state.answers.business = v;
@@ -1122,32 +1254,30 @@
   STEPS.describe = describe;
   /* The existing-client questions and examples follow the type chosen. */
   function clientQ() {
-    var t = (state.answers.type || "").toLowerCase();
-    if (/repeat/.test(t))
+    var which = __('Which order or job is it? The name you\'d use for it is fine, and the company if it isn\'t obvious.\n\nFor example: "the March order" or "invoice 1234".');
+    var t = clientType();
+    if (t === "repeat")
       return {
-        project:
-          'Which order or job is it? The name you\'d use for it is fine, and the company if we mightn\'t guess.\n\nFor example: "the March order" or "invoice 1234".',
-        changes: "How many, and any changes before it goes ahead?",
-        eg: 'For example: "same as last time, no changes" or "same again with the address updated".',
+        project: which,
+        changes: __("How many, and any changes before it goes ahead?"),
+        eg: __('For example: "same as last time, no changes" or "same again with the address updated".'),
       };
-    if (/invoice|account/.test(t))
+    if (t === "invoice")
       return {
-        project:
-          'Which order or invoice is it about?\n\nFor example: "invoice 1234" or "last month\'s order".',
-        changes: "What's the query? A line or two is plenty.",
-        eg: 'For example: "a copy of invoice 1234" or "the details are missing from the invoice".',
+        project: __('Which order or invoice is it about?\n\nFor example: "invoice 1234" or "last month\'s order".'),
+        changes: __("What's the query? A line or two is plenty."),
+        eg: __('For example: "a copy of invoice 1234" or "the details are missing from the invoice".'),
       };
-    if (/something new/.test(t))
+    if (t === "fresh")
       return {
         project: "",
-        changes: "What's the new enquiry? A line or two is plenty.",
-        eg: 'For example: "a repeat order for the spring campaign" or "a new enquiry for the second branch".',
+        changes: __("What's the new enquiry? A line or two is plenty."),
+        eg: __('For example: "a repeat order for the spring campaign" or "a new enquiry for the second branch".'),
       };
     return {
-      project:
-        'Which order or job is it? The name you\'d use for it is fine, and the company if we mightn\'t guess.\n\nFor example: "the March order" or "invoice 1234".',
-      changes: "And what needs changing? A line or two is plenty.",
-      eg: 'For example: "the delivery address changed" or "the quantity needs updating".',
+      project: which,
+      changes: __("And what needs changing? A line or two is plenty."),
+      eg: __('For example: "the delivery address changed" or "the quantity needs updating".'),
     };
   }
   /* Case studies matched to what the client told us about their business; the door's defaults fill the rest. */
@@ -1221,13 +1351,12 @@
       intro;
     if (state.matchedSector && nMatched) {
       intro =
-        "We've done a lot of work in " +
-        esc(state.matchedSector) +
-        ". " +
-        (nMatched === 1 ? "One example" : nMatched === 2 ? "Two examples" : "Three examples") +
-        (list.length > nMatched ? ", plus " + (list.length - nMatched) + " more you might like" : "") +
+        _f("We've done a lot of work in %s.", esc(state.matchedSector)) +
+        " " +
+        (nMatched === 1 ? __("One example") : nMatched === 2 ? __("Two examples") : __("Three examples")) +
+        (list.length > nMatched ? _f(", plus %s more you might like", list.length - nMatched) : "") +
         ":";
-    } else intro = "Thanks. Here's how we've approached similar briefs:";
+    } else intro = __("Thanks. Here's how we've approached similar briefs:");
     bot(intro, function () {
       var wrap = el('<div class="dt-va-cards" role="list"></div>');
       list.forEach(function (w) {
@@ -1258,8 +1387,8 @@
   function money() {
     at("money");
     ask(
-      "What's your budget? A rough figure is fine; it helps the team pitch the scope right, and a fixed quote follows once they've seen your brief.",
-      [{ label: "Not sure yet", go: setThen("budget", timing) }],
+      __("What's your budget? A rough figure is fine; it helps the team pitch the scope right, and a fixed quote follows once they've seen your brief."),
+      [{ label: __("Not sure yet"), go: setThen("budget", timing) }],
       setThen("budget", timing),
     );
   }
@@ -1270,18 +1399,18 @@
       state.service === "client"
         ? [
             {
-              label: "Today if at all possible",
+              label: __("Today if at all possible"),
               go: setThen("when", capture),
             },
-            { label: "This week", go: setThen("when", capture) },
-            { label: "No rush", go: setThen("when", capture) },
+            { label: __("This week"), go: setThen("when", capture) },
+            { label: __("No rush"), go: setThen("when", capture) },
           ]
         : [
-            { label: "Within a month", go: setThen("when", capture) },
-            { label: "One to three months", go: setThen("when", capture) },
-            { label: "No fixed date", go: setThen("when", capture) },
+            { label: __("Within a month"), go: setThen("when", capture) },
+            { label: __("One to three months"), go: setThen("when", capture) },
+            { label: __("No fixed date"), go: setThen("when", capture) },
           ];
-    ask("And when do you need it by?", c, setThen("when", capture));
+    ask(__("And when do you need it by?"), c, setThen("when", capture));
   }
   STEPS.timing = timing;
   function other(fromFree) {
@@ -1290,10 +1419,10 @@
     at("other");
     if (fromFree) {
       return ask(
-        "Noted. Anything else you'd like the team to know before they come back to you?",
+        __("Noted. Anything else you'd like the team to know before they come back to you?"),
         [
           {
-            label: "No, that's it",
+            label: __("No, that's it"),
             go: function () {
               capture();
             },
@@ -1306,7 +1435,7 @@
       );
     }
     ask(
-      "No problem. Tell me what you have in mind and I'll pass it straight to the team.",
+      __("No problem. Tell me what you have in mind and I'll pass it straight to the team."),
       [],
       function (v) {
         state.answers.business = v;
@@ -1326,29 +1455,27 @@
       maxMb = (S && S.maxFileMb) || 10;
     bot(
       isClient
-        ? "Grand. Who should the team come back to?"
-        : "That's everything I need about the job. So the team can reply, who should they come back to?",
+        ? __("Great. Who should the team come back to?")
+        : __("That's everything I need about the job. So the team can reply, who should they come back to?"),
       function () {
         var rendered = Date.now();
         var f = el(
           '<form class="dt-va-form" novalidate enctype="multipart/form-data">' +
-            '<div class="dt-va-row"><label>Name<input id="dt-va-f-name" name="name" autocomplete="name" required></label><label>Company<input id="dt-va-f-co" name="company" autocomplete="organization"></label></div>' +
-            '<label>Email<input id="dt-va-f-email" name="email" type="email" autocomplete="email" required></label>' +
-            '<label>Phone<input id="dt-va-f-phone" name="phone" type="tel" autocomplete="tel" required></label>' +
-            '<label>Anything to show us? <span>(a link is fine)</span><input id="dt-va-f-link" name="link" type="url" placeholder="https://"></label>' +
-            '<label class="dt-va-file">Or attach a file <span>(PDF, JPG, PNG, AI, EPS, ZIP or Word, up to ' +
-            maxMb +
-            'MB)</span><input id="dt-va-f-file" name="attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.ai,.eps,.zip,.doc,.docx"></label>' +
-            '<label class="dt-va-check"><input type="checkbox" id="dt-va-f-cb"> Book a call back from the team</label>' +
-            '<label class="dt-va-cb" id="dt-va-f-cbwrap" hidden>Best time to ring<input id="dt-va-f-time" placeholder="e.g. tomorrow after 2pm"></label>' +
+            '<div class="dt-va-row"><label>' + __("Name") + '<input id="dt-va-f-name" name="name" autocomplete="name" required></label><label>' + __("Company") + '<input id="dt-va-f-co" name="company" autocomplete="organization"></label></div>' +
+            '<label>' + __("Email") + '<input id="dt-va-f-email" name="email" type="email" autocomplete="email" required></label>' +
+            '<label>' + __("Phone") + '<input id="dt-va-f-phone" name="phone" type="tel" autocomplete="tel" required></label>' +
+            '<label>' + __("Anything to show us?") + ' <span>' + __("(a link is fine)") + '</span><input id="dt-va-f-link" name="link" type="url" placeholder="https://"></label>' +
+            '<label class="dt-va-file">' + __("Or attach a file") + ' <span>' + _f("(PDF, JPG, PNG, AI, EPS, ZIP or Word, up to %sMB)", maxMb) + '</span><input id="dt-va-f-file" name="attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.ai,.eps,.zip,.doc,.docx"></label>' +
+            '<label class="dt-va-check"><input type="checkbox" id="dt-va-f-cb"> ' + __("Book a call back from the team") + '</label>' +
+            '<label class="dt-va-cb" id="dt-va-f-cbwrap" hidden>' + __("Best time to call") + '<input id="dt-va-f-time" placeholder="' + esc(__("e.g. tomorrow after 2pm")) + '"></label>' +
             '<label class="dt-va-hp" aria-hidden="true">Website<input id="dt-va-f-hp" name="website2" tabindex="-1" autocomplete="off"></label>' +
             '<div id="dt-va-turnstile"></div>' +
-            '<span class="dt-va-err" id="dt-va-f-err">Name, a working email and a phone number are needed so the team can reply.</span>' +
-            "<small>We use these details only to reply to this enquiry. You'll get a copy of the brief by email. <a href=\"" +
+            '<span class="dt-va-err" id="dt-va-f-err">' + __("Name, a working email and a phone number are needed so the team can reply.") + '</span>' +
+            "<small>" + __("We use these details only to reply to this enquiry. You'll get a confirmation by email.") + ' <a href="' +
             C.PRIVACY_URL +
-            '" target="_blank" rel="noopener">Privacy policy</a>.</small>' +
-            '<button class="dt-va-btn" type="submit">Send to ' +
-            esc(C.COMPANY_NAME) +
+            '" target="_blank" rel="noopener">' + __("Privacy policy") + '</a>.</small>' +
+            '<button class="dt-va-btn" type="submit">' +
+            _f("Send to %s", esc(C.COMPANY_NAME)) +
             "</button></form>",
         );
         var tsId = null;
@@ -1375,10 +1502,7 @@
             var fl = e.target.files[0];
             var err = f.querySelector("#dt-va-f-err");
             if (fl && fl.size > maxMb * 1024 * 1024) {
-              err.textContent =
-                "That file is over " +
-                maxMb +
-                "MB. A link to it is fine instead.";
+              err.textContent = _f("That file is over %sMB. A link to it is fine instead.", maxMb);
               f.classList.add("dt-va-invalid");
               e.target.value = "";
             }
@@ -1398,8 +1522,7 @@
             !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ||
             g("dt-va-f-phone").replace(/\D/g, "").length < 7
           ) {
-            err.textContent =
-              "Name, a working email and a phone number are needed so the team can reply.";
+            err.textContent = __("Name, a working email and a phone number are needed so the team can reply.");
             f.classList.add("dt-va-invalid");
             return;
           }
@@ -1415,7 +1538,7 @@
           a.file = file ? file.name : "";
           var btn = f.querySelector(".dt-va-btn");
           btn.disabled = true;
-          btn.textContent = "Sending…";
+          btn.textContent = __("Sending…");
           var extra = {
             website2: g("dt-va-f-hp"),
             t: rendered,
@@ -1428,7 +1551,7 @@
             f.querySelectorAll("input").forEach(function (i) {
               i.disabled = true;
             });
-            btn.textContent = ok ? "Sent" : "Not sent";
+            btn.textContent = ok ? __("Sent") : __("Not sent");
             if (ref) state.ref = ref;
             done(ok, why);
           });
@@ -1442,31 +1565,49 @@
     );
   }
   STEPS.capture = capture;
+  /* Brief labels: the server reads "Budget", "Project", "Business", … back with the same translated strings. */
+  /* Answer keys the built-in steps and the form use; any other key comes from a Step question set in the admin. */
+  var BUILTIN_ANSWERS = ["type", "project", "scope", "pages", "pagesLabel", "goal", "business", "detail", "notes", "when", "budget", "name", "company", "email", "phone", "callback", "time", "link", "file"];
+  /* Answers to the admin's Step questions, labelled by their answer key ("meeting_type" -> "Meeting type"). */
+  function customRows(a) {
+    return Object.keys(a)
+      .filter(function (k) {
+        return BUILTIN_ANSWERS.indexOf(k) < 0 && a[k] !== "" && a[k] != null;
+      })
+      .map(function (k) {
+        var label = k.replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+        return [label.charAt(0).toUpperCase() + label.slice(1), String(a[k])];
+      });
+  }
   function rows() {
     var a = state.answers;
     return [
-      ["Enquiry", LABEL[state.service]],
-      a.type && ["Type", a.type],
-      a.project && ["Project", a.project],
-      a.scope && ["Scope", a.scope],
-      a.pages ? ["Pages", a.pages] : a.pagesLabel && ["Pages", a.pagesLabel],
-      a.goal && ["Goal", a.goal],
+      [__("Enquiry"), LABEL[state.service]],
+      a.type && [__("Type"), a.type],
+      a.project && [__("Project"), a.project],
+      a.scope && [__("Scope"), a.scope],
+      a.pages ? [__("Pages"), a.pages] : a.pagesLabel && [__("Pages"), a.pagesLabel],
+      a.goal && [__("Goal"), a.goal],
       (a.business || a.detail) && [
-        state.service === "client" ? "Changes" : "Business",
+        state.service === "client" ? __("Changes") : __("Business"),
         a.business || a.detail,
       ],
-      a.notes && ["Notes", a.notes],
-      a.when && ["Timing", a.when],
-      a.budget && ["Budget", a.budget],
-      ["Contact", a.name + (a.company ? ", " + a.company : "")],
-      ["Email", a.email],
-      a.phone && ["Phone", a.phone],
-      a.callback && ["Call back", "Yes" + (a.time ? ", " + a.time : "")],
-      a.link && ["Link", a.link],
-      a.file && ["File", a.file],
-      source() && ["Source", source()],
-      ["Page", location.pathname],
-    ].filter(Boolean);
+      a.notes && [__("Notes"), a.notes],
+      a.when && [__("Timing"), a.when],
+      a.budget && [__("Budget"), a.budget],
+    ]
+      .concat(customRows(a))
+      .concat([
+      [__("Contact"), a.name + (a.company ? ", " + a.company : "")],
+      a.email && [__("Email"), a.email],
+      a.phone && [__("Phone"), a.phone],
+      a.callback && [__("Call back"), __("Yes") + (a.time ? ", " + a.time : "")],
+      a.link && [__("Link"), a.link],
+      a.file && [__("File"), a.file],
+      source() && [__("Source"), source()],
+      [__("Page"), location.pathname],
+      ])
+      .filter(Boolean);
   }
   function briefText() {
     return rows()
@@ -1487,7 +1628,7 @@
     }
     var fd = new FormData();
     fd.append("name", a.name);
-    fd.append("email", a.email);
+    fd.append("email", a.email || "");
     fd.append("phone", a.phone || "");
     fd.append("company", a.company || "");
     fd.append("link", a.link || "");
@@ -1505,8 +1646,24 @@
       fd.append(k, extra[k]);
     });
     if (file) fd.append("attachment", file, file.name);
+    getAgedToken(function (token) {
+      fd.set("token", token);
+      post(true);
+    });
+    function post(retry) {
     fetch(S.submit, { method: "POST", body: fd, credentials: "same-origin" })
       .then(function (r) {
+        if (r.status === 403 && retry) {
+          return r.text().then(function (t) {
+            if (t.indexOf('"token"') === -1) return { error: "http403" };
+            resetToken();
+            getAgedToken(function (token) {
+              fd.set("token", token);
+              post(false);
+            });
+            return { retrying: true };
+          });
+        }
         return r.text().then(function (t) {
           var j = null;
           try {
@@ -1518,6 +1675,7 @@
         });
       })
       .then(function (j) {
+        if (j && j.retrying) return;
         cb(
           !!(j && j.ok),
           j && j.ref ? j.ref : null,
@@ -1527,12 +1685,13 @@
       .catch(function () {
         cb(false, null, "network");
       });
+    }
   }
   function bookingChip() {
     if (!C.BOOKING_URL) return [];
     return [
       {
-        label: "Pick a time in the diary",
+        label: __("Pick a time in the diary"),
         go: function () {
           var u =
             C.BOOKING_URL +
@@ -1541,18 +1700,14 @@
             encodeURIComponent(state.answers.name || "") +
             "&email=" +
             encodeURIComponent(
-              (state.answers.email || "").indexOf("@no-email") > -1
-                ? ""
-                : state.answers.email || "",
+              state.answers.email || "",
             );
           track("booking");
           window.open(u, "_blank", "noopener");
           bot(
-            "The diary is open in a new tab. Pick a slot that suits and it goes straight into the " +
-              typeWord() +
-              " calendar; your brief is already with the team.",
+            _f("The diary is open in a new tab. Pick a slot that suits and it goes straight into the %s calendar; your brief is already with the team.", typeWord()),
             function () {
-              setChips([{ label: "Start again", go: start }]);
+              setChips([{ label: __("Start again"), go: start }]);
             },
           );
         },
@@ -1561,16 +1716,15 @@
   }
   function sendReason(why) {
     var m = {
-      rate: "That is several sends from this connection in the past hour, so this one was held back. ",
-      file_type:
-        "The attached file is a type I can't take (PDF, JPG, PNG, AI, EPS, ZIP or Word are fine). ",
-      file_size:
-        "The attached file is too big to send this way. A link to it is fine instead. ",
-      fields: "A name, a working email and a phone number are needed. ",
-      origin: "The send was blocked as coming from another site. ",
-      network: "The connection dropped before the send finished. ",
+      rate: __("That is several sends from this connection in the past hour, so this one was held back."),
+      file_type: __("The attached file is a type I can't take (PDF, JPG, PNG, AI, EPS, ZIP or Word are fine)."),
+      file_size: __("The attached file is too big to send this way. A link to it is fine instead."),
+      fields: __("A name, a working email and a phone number are needed."),
+      origin: __("The send was blocked as coming from another site."),
+      network: __("The connection dropped before the send finished."),
+      token: __("The page has been open for a long time. Please try again."),
     };
-    return m[why] || "";
+    return m[why] ? m[why] + " " : "";
   }
   function done(ok, why) {
     var a = state.answers,
@@ -1581,47 +1735,55 @@
       callback: !!a.callback,
       why: ok ? "" : why || "",
     });
+    var sent =
+      __("Sent.") +
+      " " +
+      (a.email ? _f("A confirmation is on its way to %s.", esc(a.email)) + " " : "");
     var msg = ok
       ? a.callback
-        ? "Sent. A copy is on its way to " +
-          esc(a.email) +
-          ". One of the " +
-          esc(C.COMPANY_NAME) +
-          " team will ring you on " +
-          esc(a.phone) +
-          (a.time ? ", " + esc(a.time) : "") +
+        ? sent +
           (studioOpen()
-            ? ", " + C.RESPONSE_PROMISE + " at the latest."
-            : ", once the " + typeWord() + " reopens " + reopens() + ".")
+            ? _f(
+                "One of the %1$s team will call you on %2$s%3$s, %4$s at the latest.",
+                esc(C.COMPANY_NAME),
+                esc(a.phone),
+                a.time ? ", " + esc(a.time) : "",
+                C.RESPONSE_PROMISE,
+              )
+            : _f(
+                "One of the %1$s team will call you on %2$s%3$s, once the %4$s reopens %5$s.",
+                esc(C.COMPANY_NAME),
+                esc(a.phone),
+                a.time ? ", " + esc(a.time) : "",
+                typeWord(),
+                reopens(),
+              ))
         : studioOpen()
-          ? "Sent. A copy is on its way to " +
-            esc(a.email) +
-            ". The " +
-            esc(C.COMPANY_NAME) +
-            " team will read it and come back to you " +
-            C.RESPONSE_PROMISE +
-            "."
-          : "Sent. A copy is on its way to " +
-            esc(a.email) +
-            ". The " +
-            typeWord() +
-            " is closed just now and reopens " +
-            reopens() +
-            "; the team will read your brief then and come back to you the same day."
+          ? sent +
+            _f("The %1$s team will read it and come back to you %2$s.", esc(C.COMPANY_NAME), C.RESPONSE_PROMISE)
+          : sent +
+            _f(
+              "The %1$s is closed right now and reopens %2$s; the team will read your brief then and come back to you the same day.",
+              typeWord(),
+              reopens(),
+            )
       : sendReason(why) +
-        "I couldn't send that just now. Your brief is below: <a href=\"mailto:" +
-        C.COMPANY_EMAIL +
-        "?subject=" +
-        encodeURIComponent("Enquiry " + ref) +
-        "&body=" +
-        encodeURIComponent(briefText()) +
-        '">email it to us in one click</a>, or ring ' +
-        PHONE_LINK +
-        ".";
+        _f(
+          'I couldn\'t send that just now. Your brief is below: <a href="%1$s">email it to us in one click</a>, or call %2$s.',
+          "mailto:" +
+            C.COMPANY_EMAIL +
+            "?subject=" +
+            encodeURIComponent(_f("Enquiry %s", ref)) +
+            "&body=" +
+            encodeURIComponent(briefText()),
+          PHONE_LINK,
+        );
     bot(msg, function () {
       var r = rows();
       var s = el(
-        '<div class="dt-va-summary"><div class="dt-va-h">Your brief <span>' +
+        '<div class="dt-va-summary"><div class="dt-va-h">' +
+          __("Your brief") +
+          " <span>" +
           esc(ref) +
           "</span></div><dl>" +
           r
@@ -1636,37 +1798,25 @@
       });
       body.appendChild(s);
       /* What happens next */
+      var first = studioOpen() ? __("Within one working day") : whenLabel();
       var steps =
         state.service === "client"
           ? [
-              [
-                studioOpen() ? "Within one working day" : whenLabel(),
-                "The team reads your request and confirms by email or phone.",
-              ],
-              ["Then", "The work is scheduled and you get a date."],
-              [
-                "On completion",
-                "Proofs or files to you for sign-off before anything goes to print or live.",
-              ],
+              [first, __("The team reads your request and confirms by email or phone.")],
+              [__("Then"), __("The work is scheduled and you get a date.")],
             ]
           : [
               [
-                studioOpen() ? "Within one working day" : whenLabel(),
-                "The team reads your brief and comes back to you" +
-                  (a.callback ? " by phone" : "") +
-                  ".",
+                first,
+                a.callback
+                  ? __("The team reads your brief and comes back to you by phone.")
+                  : __("The team reads your brief and comes back to you."),
               ],
-              [
-                "Then",
-                "A 20-minute call to talk it through. Free, no obligation.",
-              ],
-              [
-                "Within a week of the call",
-                "A written proposal with a fixed price and a timeline.",
-              ],
+              [__("Then"), __("A short conversation to understand exactly what you need.")],
+              [__("After that"), __("A clear proposal or quote for you to review.")],
             ];
       var n = el(
-        '<div class="dt-va-next"><div class="dt-va-h">What happens next</div><ol></ol></div>',
+        '<div class="dt-va-next"><div class="dt-va-h">' + __("What happens next") + "</div><ol></ol></div>",
       );
       steps.forEach(function (st) {
         var li = el("<li><b></b><span></span></li>");
@@ -1681,25 +1831,23 @@
       setTimeout(
         function () {
           bot(
-            "Thanks, " +
-              esc((a.name || "").split(" ")[0]) +
-              ". Talk soon. If you think of a question in the meantime, just type it here.",
+            _f("Thanks, %s. Talk soon. If you think of a question in the meantime, just type it here.", esc((a.name || "").split(" ")[0])),
             function () {
               setChips(
                 bookingChip().concat(
                   a.callback
-                    ? [{ label: "Start again", go: start }]
+                    ? [{ label: __("Start again"), go: start }]
                     : [
                         {
-                          label: "Actually, I'd like a call back",
+                          label: __("Actually, I'd like a call back"),
                           go: function () {
                             callback();
                           },
                         },
                         {
-                          label: "That's everything, thanks",
+                          label: __("That's everything, thanks"),
                           go: function () {
-                            setChips([{ label: "Start again", go: start }]);
+                            setChips([{ label: __("Start again"), go: start }]);
                           },
                         },
                       ],
@@ -1716,11 +1864,17 @@
     track("human");
     at("human");
     ask(
-      "Of course. The team in " +
-        esc(C.COMPANY_CITY) +
-        " take the calls themselves.\n\n<b>Phone</b> " +
+      (C.COMPANY_CITY
+        ? _f("Of course. The team in %s takes the calls themselves.", esc(C.COMPANY_CITY))
+        : __("Of course. The team takes the calls themselves.")) +
+        "\n\n<b>" +
+        __("Phone") +
+        "</b> " +
         PHONE_LINK +
-        ', Monday to Friday\n<b>Email</b> <a href="mailto:' +
+        (daysLabel() ? ", " + daysLabel() : "") +
+        "\n<b>" +
+        __("Email") +
+        '</b> <a href="mailto:' +
         C.COMPANY_EMAIL +
         '">' +
         C.COMPANY_EMAIL +
@@ -1728,38 +1882,45 @@
         (WA_LINK ? "\n<b>WhatsApp</b> " + WA_LINK : "") +
         // Respect saved public settings, including an intentionally blank address.
         (C.COMPANY_ADDRESS
-          ? "\n<b>Address</b> " + esc(C.COMPANY_ADDRESS)
+          ? "\n<b>" + __("Address") + "</b> " + esc(C.COMPANY_ADDRESS)
           : "") +
         (studioOpen()
           ? ""
-          : "\n\nThe " +
-            typeWord() +
-            " is closed just now and reopens " +
-            reopens() +
-            ".") +
-        "\n\nOr leave a number and we'll ring you" +
-        (studioOpen() ? "" : " then") +
-        ".",
+          : "\n\n" + _f("The %1$s is closed right now and reopens %2$s.", typeWord(), reopens())) +
+        "\n\n" +
+        (studioOpen() ? __("Or leave a number and we'll call you.") : __("Or leave a number and we'll call you then.")),
       bookingChip()
         .concat(waChip())
         .concat([
           {
-            label: "Ask the team to ring me",
+            label: __("Ask the team to call me"),
             go: function () {
               callback();
             },
           },
-          { label: "Back to the questions", go: start },
+          { label: __("Back to the questions"), go: start },
         ]),
     );
   }
   STEPS.human = human;
   function callback() {
     at("callback");
-    bot("Where and when suits?", function () {
+    bot(__("Where and when suits?"), function () {
       var rendered = Date.now();
       var f = el(
-        '<form class="dt-va-form" novalidate><label>Name<input id="dt-va-c-name" required autocomplete="name"></label><label>Phone<input id="dt-va-c-phone" type="tel" required autocomplete="tel"></label><label>Best time<input id="dt-va-c-time" placeholder="e.g. tomorrow after 2pm"></label><label class="dt-va-hp" aria-hidden="true">Website<input id="dt-va-c-hp" name="website2" tabindex="-1" autocomplete="off"></label><span class="dt-va-err">A name and phone number are needed.</span><button class="dt-va-btn" type="submit">Request a call</button></form>',
+        '<form class="dt-va-form" novalidate><label>' +
+          __("Name") +
+          '<input id="dt-va-c-name" required autocomplete="name"></label><label>' +
+          __("Phone") +
+          '<input id="dt-va-c-phone" type="tel" required autocomplete="tel"></label><label>' +
+          __("Best time") +
+          '<input id="dt-va-c-time" placeholder="' +
+          esc(__("e.g. tomorrow after 2pm")) +
+          '"></label><label class="dt-va-hp" aria-hidden="true">Website<input id="dt-va-c-hp" name="website2" tabindex="-1" autocomplete="off"></label><span class="dt-va-err">' +
+          __("A name and phone number are needed.") +
+          '</span><button class="dt-va-btn" type="submit">' +
+          __("Request a call") +
+          "</button></form>",
       );
       f.addEventListener("input", function () {
         f.classList.remove("dt-va-invalid");
@@ -1776,12 +1937,11 @@
         var a = state.answers;
         a.name = a.name || n;
         a.phone = p;
-        a.email = a.email || "callback@no-email.invalid";
         a.callback = true;
         a.time = t;
         a.notes =
           (a.notes ? a.notes + " " : "") +
-          "Callback requested from the contact card";
+          __("Callback requested from the contact card");
         if (!state.service) state.service = "other";
         f.querySelectorAll("input,button").forEach(function (i) {
           i.disabled = true;
@@ -1797,23 +1957,16 @@
             track("sent", { ok: ok, callback: true });
             bot(
               ok
-                ? "Thanks " +
-                    esc(n.split(" ")[0]) +
-                    ". One of the team will ring " +
-                    esc(p) +
-                    (t ? " " + esc(t) : "") +
-                    "."
-                : "I couldn't send that just now. Please ring " +
-                    PHONE_LINK +
-                    ' or email <a href="mailto:' +
-                    C.COMPANY_EMAIL +
-                    '">' +
-                    C.COMPANY_EMAIL +
-                    "</a>.",
+                ? _f("Thanks %1$s. One of the team will call %2$s%3$s.", esc(n.split(" ")[0]), esc(p), t ? " " + esc(t) : "")
+                : _f(
+                    'I couldn\'t send that just now. Please call %1$s or email <a href="mailto:%2$s">%2$s</a>.',
+                    PHONE_LINK,
+                    C.COMPANY_EMAIL,
+                  ),
               function () {
                 at("done");
                 clearSaved();
-                setChips([{ label: "Start again", go: start }]);
+                setChips([{ label: __("Start again"), go: start }]);
               },
             );
           },
@@ -1868,7 +2021,7 @@
       state.pending = null;
       setChips([]);
       bot(
-        "Of course. Leave a name, a number and a time that suits, and one of the team will ring you.",
+        __("Of course. Leave a name, a number and a time that suits, and one of the team will call you."),
         function () {
           callback();
         },
@@ -1880,26 +2033,23 @@
       state.pending = null;
       setChips([]);
       bot(
-        "You can WhatsApp the " +
-          typeWord() +
-          ' on <a href="' +
-          waUrl() +
-          '" target="_blank" rel="noopener">' +
-          C.WHATSAPP_DISPLAY +
-          "</a>; the team read it during " +
-          typeWord() +
-          " hours. Or I can have them ring you.",
+        _f(
+          'You can WhatsApp the %1$s on <a href="%2$s" target="_blank" rel="noopener">%3$s</a>; the team reads it during %1$s hours. Or I can have them call you.',
+          typeWord(),
+          waUrl(),
+          C.WHATSAPP_DISPLAY,
+        ),
         function () {
           setChips(
             waChip().concat([
               {
-                label: "Ask the team to ring me",
+                label: __("Ask the team to call me"),
                 go: function () {
                   callback();
                 },
               },
               {
-                label: "Back to the questions",
+                label: __("Back to the questions"),
                 go: function () {
                   resume();
                 },
@@ -1937,7 +2087,7 @@
       (state.answers.notes ? state.answers.notes + " " : "") + v;
     save();
     var keep = state.lastChips.slice();
-    bot("Noted, I've added that to your brief.", function () {
+    bot(__("Noted, I've added that to your brief."), function () {
       setChips(keep);
     });
   }
@@ -1953,7 +2103,7 @@
     input.style.height = Math.min(120, input.scrollHeight) + "px";
   });
   $("dt-va-human").onclick = function () {
-    user("I'd rather talk to a person");
+    user(__("I'd rather talk to a person"));
     human();
   };
   (function () {
@@ -2062,7 +2212,6 @@
       vv.addEventListener("resize", place);
       vv.addEventListener("scroll", place);
     }
-    var _show = tab;
     new MutationObserver(place).observe(tab, {
       attributes: true,
       attributeFilter: ["hidden"],
@@ -2098,21 +2247,23 @@
       .filter(Boolean)
       .join(", ");
     bot(
-      "Welcome back. You were part-way through an enquiry" +
-        (j.service ? " about " + (LABEL[j.service] || "").toLowerCase() : "") +
+      (j.service
+        ? _f("Welcome back. You were part-way through an enquiry about %s", (LABEL[j.service] || "").toLowerCase())
+        : __("Welcome back. You were part-way through an enquiry")) +
         (got ? " (" + esc(got) + ")" : "") +
-        ". Pick up where you left off?",
+        ". " +
+        __("Pick up where you left off?"),
       function () {
         setChips([
           {
-            label: "Yes, carry on",
+            label: __("Yes, carry on"),
             go: function () {
               var fn = STEPS[j.step] || start;
               track("resume");
               fn();
             },
           },
-          { label: "No, start again", go: start },
+          { label: __("No, start again"), go: start },
         ]);
       },
     );
@@ -2124,6 +2275,7 @@
     lock(true);
     setStatus();
     loadTurnstile();
+    getToken(function () {}); // prefetch, so the first question or a quick enquiry does not wait for it
     track("open");
     if (!state.started) {
       var j = saved();
@@ -2149,6 +2301,11 @@
     track("restart");
     start();
   };
+  /* Delays count from the page load, not from when the loader fetched this script. */
+  function sincePageLoad(ms) {
+    var elapsed = window.performance && performance.now ? performance.now() : 0;
+    return Math.max(0, ms - elapsed);
+  }
   /* Nudge: once per visitor, only while the panel is closed. */
   (function () {
     var n = $("dt-va-nudge");
@@ -2184,15 +2341,15 @@
           sessionStorage.setItem("dt-va-resume-nudged", "1");
         } catch (e) {}
         $("dt-va-nudge-open").innerHTML =
-          "<b>Welcome back.</b>Your brief is saved here. Want to finish it?";
+          "<b>" + __("Welcome back.") + "</b>" + __("Your brief is saved here. Want to finish it?");
         n.hidden = false;
         n.classList.add("dt-va-in");
         track("nudge", { step: "resume" });
-      }, 4000);
+      }, sincePageLoad(4000));
     } else {
       if (seen()) return;
       var quick =
-        /our-work|portfolio|services|contact|logo|brand|web|print/i.test(
+        /contact|service|product|pricing|price|quote|portfolio|our-work/i.test(
           location.pathname,
         );
       setTimeout(
@@ -2201,16 +2358,15 @@
           mark();
           if (!studioOpen())
             $("dt-va-nudge-open").innerHTML =
-              "<b>Planning a rebrand, a brochure or a website?</b>Leave the team a brief now; they read it when the " +
-              typeWord() +
-              " reopens " +
-              esc(reopens()) +
-              ".";
+              "<b>" +
+              __("Have a question?") +
+              "</b>" +
+              _f("Leave the team a message now; they read it when the %1$s reopens %2$s.", typeWord(), esc(reopens()));
           n.hidden = false;
           n.classList.add("dt-va-in");
           track("nudge");
         },
-        quick ? 8000 : 20000,
+        sincePageLoad(quick ? 8000 : 20000),
       );
     }
     $("dt-va-nudge-open").onclick = function () {
@@ -2276,58 +2432,6 @@
       );
   })();
   setStatus();
-  $("dt-va-hours").textContent = C.COMPANY_PHONE_DISPLAY + " · Mon to Fri";
-  /* c32: Google rating strip on the inner pages (under the shared awards row; on /contact/ under the address). Not on the homepage, which has its own. */
-  (function () {
-    if (!C.GOOGLE_RATING || document.querySelector(".dt-q-google, .dt-g-strip"))
-      return;
-    var host = document.querySelector(".post-after .dt-awards"),
-      where = "afterend";
-    if (!host) {
-      var addr = document.querySelector(".post-content .dt-address");
-      if (addr) {
-        host = addr.closest(".row-inner");
-      }
-    }
-    if (!host) return;
-    var star =
-        "M12 1.8l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.9l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z",
-      p = "",
-      i;
-    for (i = 0; i < 5; i++)
-      p += '<path d="' + star + '" transform="translate(' + i * 26 + ' 0)"/>';
-    var svg =
-      '<svg viewBox="0 0 128 24" width="128" height="24" focusable="false" aria-hidden="true">' +
-      p +
-      "</svg>";
-    var pct = Math.max(
-      0,
-      Math.min(100, (parseFloat(C.GOOGLE_RATING) / 5) * 100),
-    ).toFixed(1);
-    var d = el(
-      '<div class="dt-g-strip"><a href="' +
-        esc(C.GOOGLE_URL || "#") +
-        '" target="_blank" rel="noopener" aria-label="' +
-        esc(C.COMPANY_NAME) +
-        " is rated " +
-        esc(C.GOOGLE_RATING) +
-        " out of 5 on Google from " +
-        esc(String(C.GOOGLE_REVIEWS == null ? "" : C.GOOGLE_REVIEWS)) +
-        ' reviews. Opens Google in a new tab."><span class="dt-g-w">Google</span><span class="dt-g-s"><span class="dt-g-base">' +
-        svg +
-        '</span><span class="dt-g-fill" style="width:' +
-        pct +
-        '%">' +
-        svg +
-        '</span></span><span class="dt-g-n">' +
-        esc(C.GOOGLE_RATING) +
-        '</span><span class="dt-g-c">from ' +
-        esc(String(C.GOOGLE_REVIEWS == null ? "" : C.GOOGLE_REVIEWS)) +
-        " reviews</span></a></div>",
-    );
-    host.insertAdjacentElement(where, d);
-    d.querySelector("a").addEventListener("click", function () {
-      track("google_rating");
-    });
-  })();
+  $("dt-va-hours").textContent =
+    C.COMPANY_PHONE_DISPLAY + (daysLabel(true) ? " · " + daysLabel(true) : "");
 })();

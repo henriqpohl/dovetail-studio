@@ -114,7 +114,11 @@ final class SchemaGraph {
 	 * @return void
 	 */
 	public function render(): void {
-		if ( $this->rendered || is_admin() || $this->yoast_handles_graph() ) {
+		if ( $this->rendered
+			|| is_admin()
+			|| $this->yoast_handles_graph()
+			|| '' !== Environment::other_seo_plugin()
+		) {
 			return;
 		}
 
@@ -125,7 +129,7 @@ final class SchemaGraph {
 			return;
 		}
 
-		self::normalize_json_float_precision();
+		$precision = self::normalize_json_float_precision();
 
 		$json = wp_json_encode(
 			array(
@@ -135,11 +139,13 @@ final class SchemaGraph {
 			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG
 		);
 
+		self::restore_json_float_precision( $precision );
+
 		if ( ! is_string( $json ) || '' === $json ) {
 			return;
 		}
 
-		echo "\n<script type=\"application/ld+json\" class=\"dovetail-schema-graph local-business-schema\">";
+		echo "\n<script type=\"application/ld+json\" class=\"dovetail-schema-graph\">";
 		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON is encoded with JSON_HEX_TAG.
 		echo "</script>\n";
 	}
@@ -156,7 +162,7 @@ final class SchemaGraph {
 		 *
 		 * @param array<int, array<string, mixed>> $pieces Schema pieces.
 		 */
-		$pieces = apply_filters( self::FILTER, array() );
+		$pieces = apply_filters( self::FILTER, array() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- self::FILTER is "dovetail_studio_schema_graph".
 		$pieces = is_array( $pieces ) ? $pieces : array();
 		$clean  = array();
 		$ids    = array();
@@ -202,9 +208,9 @@ final class SchemaGraph {
 	/**
 	 * Builds a stable `@id` following the conventions used by Yoast SEO.
 	 *
-	 * Supported keys: `organization`, `website`, `webpage`, `breadcrumb`,
-	 * `primaryimage`, `article`; any other key becomes a fragment of the
-	 * current page URL.
+	 * Supported keys: `organization`, `person` (the person the site represents),
+	 * `website`, `webpage`, `breadcrumb`, `primaryimage`, `article`; any other
+	 * key becomes a fragment of the current page URL.
 	 *
 	 * @param string $key Piece key.
 	 * @return string
@@ -215,6 +221,8 @@ final class SchemaGraph {
 		switch ( $key ) {
 			case 'organization':
 				return $home . '/#organization';
+			case 'person':
+				return $home . '/#/schema/person/site';
 			case 'website':
 				return $home . '/#website';
 			case 'webpage':
@@ -255,9 +263,16 @@ final class SchemaGraph {
 		} elseif ( is_search() ) {
 			$url = (string) get_search_link();
 		} elseif ( is_day() ) {
-			$url = (string) get_day_link( (int) get_query_var( 'year' ), (int) get_query_var( 'monthnum' ), (int) get_query_var( 'day' ) );
+			$url = (string) get_day_link(
+				(int) get_query_var( 'year' ),
+				(int) get_query_var( 'monthnum' ),
+				(int) get_query_var( 'day' )
+			);
 		} elseif ( is_month() ) {
-			$url = (string) get_month_link( (int) get_query_var( 'year' ), (int) get_query_var( 'monthnum' ) );
+			$url = (string) get_month_link(
+				(int) get_query_var( 'year' ),
+				(int) get_query_var( 'monthnum' )
+			);
 		} elseif ( is_year() ) {
 			$url = (string) get_year_link( (int) get_query_var( 'year' ) );
 		}
@@ -283,11 +298,28 @@ final class SchemaGraph {
 	/**
 	 * Prevents PHP float artifacts from leaking into JSON-LD numbers.
 	 *
+	 * @return string The previous serialize_precision, for restore_json_float_precision().
+	 */
+	public static function normalize_json_float_precision(): string {
+		$previous = (string) ini_get( 'serialize_precision' );
+
+		if ( '-1' !== $previous ) {
+			@ini_set( 'serialize_precision', '-1' ); // phpcs:ignore WordPress.PHP.IniSet.Risky -- JSON floats print short (0.1, not 0.1000000000000000055); restored below. @: some hosts block ini_set().
+		}
+
+		return $previous;
+	}
+
+	/**
+	 * Puts back the precision changed by normalize_json_float_precision(), so
+	 * other plugins' JSON keeps the host setting.
+	 *
+	 * @param string $previous Value returned by normalize_json_float_precision().
 	 * @return void
 	 */
-	public static function normalize_json_float_precision(): void {
-		if ( '-1' !== (string) ini_get( 'serialize_precision' ) ) {
-			@ini_set( 'serialize_precision', '-1' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Some hosts disable runtime INI changes.
+	public static function restore_json_float_precision( string $previous ): void {
+		if ( '' !== $previous && '-1' !== $previous ) {
+			@ini_set( 'serialize_precision', $previous ); // phpcs:ignore WordPress.PHP.IniSet.Risky -- Restores the previous value.
 		}
 	}
 
@@ -301,8 +333,12 @@ final class SchemaGraph {
 	private static function paged_url( string $url, int $paged ): string {
 		global $wp_rewrite;
 
-		if ( $wp_rewrite instanceof \WP_Rewrite && $wp_rewrite->using_permalinks() && false === strpos( $url, '?' ) ) {
-			return trailingslashit( $url ) . user_trailingslashit( $wp_rewrite->pagination_base . '/' . $paged, 'paged' );
+		if ( $wp_rewrite instanceof \WP_Rewrite
+			&& $wp_rewrite->using_permalinks()
+			&& false === strpos( $url, '?' )
+		) {
+			return trailingslashit( $url )
+				. user_trailingslashit( $wp_rewrite->pagination_base . '/' . $paged, 'paged' );
 		}
 
 		return add_query_arg( 'paged', $paged, $url );

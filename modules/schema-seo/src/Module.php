@@ -5,32 +5,49 @@ namespace DovetailStudio\SchemaSeo;
 defined( 'ABSPATH' ) || exit;
 
 final class Module {
-    private static $instance = null;
-    private $booted = false;
+	private static $instance = null;
+	private $booted          = false;
 
-    public static function instance(): self {
-        if ( null === self::$instance ) { self::$instance = new self(); }
-        return self::$instance;
-    }
+	public static function instance(): self {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
 
-    public function boot(): void {
-        if ( $this->booted ) { return; }
-        $this->booted = true;
+		return self::$instance;
+	}
 
-        defined( 'LBS_VERSION' ) || define( 'LBS_VERSION', '1.5.0' );
-        defined( 'LBS_FILE' ) || define( 'LBS_FILE', __FILE__ );
-        defined( 'LBS_PATH' ) || define( 'LBS_PATH', trailingslashit( dirname( __DIR__ ) ) );
-        defined( 'LBS_URL' ) || define( 'LBS_URL', DOVETAIL_STUDIO_URL . 'modules/schema-seo/' );
+	public function boot(): void {
+		if ( $this->booted ) {
+			return;
+		}
 
-        require_once __DIR__ . '/Schema.php';
-        require_once __DIR__ . '/SiteGraph.php';
-        require_once __DIR__ . '/Breadcrumbs.php';
-        require_once __DIR__ . '/Admin.php';
-        require_once __DIR__ . '/functions.php';
+		$this->booted = true;
 
-        ( new Admin() )->register_hooks();
-        ( new Schema() )->register_hooks();
-        ( new SiteGraph() )->register_hooks();
-        Breadcrumbs::instance()->register_hooks();
-    }
+		// The version comes from module.php only, so it can never drift from the manifest.
+		$manifest = require dirname( __DIR__ ) . '/module.php';
+		defined( 'DOVETAIL_SCHEMA_SEO_VERSION' ) || define(
+			'DOVETAIL_SCHEMA_SEO_VERSION',
+			(string) $manifest['version']
+		);
+		defined( 'DOVETAIL_SCHEMA_SEO_FILE' ) || define( 'DOVETAIL_SCHEMA_SEO_FILE', __FILE__ );
+		defined( 'DOVETAIL_SCHEMA_SEO_PATH' ) || define(
+			'DOVETAIL_SCHEMA_SEO_PATH',
+			trailingslashit( dirname( __DIR__ ) )
+		);
+		defined( 'DOVETAIL_SCHEMA_SEO_URL' ) || define(
+			'DOVETAIL_SCHEMA_SEO_URL',
+			\DovetailStudio\Core\Loader::path_url( dirname( __DIR__ ) )
+		);
+
+		require_once __DIR__ . '/Schema.php';
+		require_once __DIR__ . '/SiteGraph.php';
+		require_once __DIR__ . '/Breadcrumbs.php';
+		require_once __DIR__ . '/Admin.php';
+		require_once __DIR__ . '/functions.php';
+
+		( new Admin() )->register_hooks();
+		( new Schema() )->register_hooks();
+		( new SiteGraph() )->register_hooks();
+		Breadcrumbs::instance()->register_hooks();
+	}
 }

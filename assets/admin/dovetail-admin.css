@@ -8,9 +8,10 @@
 	padding-bottom: 24px;
 }
 
-body.dovetail-admin-page .notice,
-body.dovetail-admin-page .updated,
-body.dovetail-admin-page .error,
+/* Studio screens show only Studio notices (Core\AdminScreens::notice()); this hides anything printed outside the notice hooks. */
+body.dovetail-admin-page .notice:not(.dovetail-notice),
+body.dovetail-admin-page .updated:not(.dovetail-notice),
+body.dovetail-admin-page .error:not(.dovetail-notice),
 body.dovetail-admin-page .update-nag {
 	display: none !important;
 }
@@ -527,12 +528,6 @@ body.dovetail-admin-page .update-nag {
 
 
 /* Dovetail Studio shared admin extensions. */
-.dovetail-page-header__actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
 .dovetail-section-nav a.is-active,
 .dovetail-section-nav a[aria-current="page"] {
 	background: #fff;
