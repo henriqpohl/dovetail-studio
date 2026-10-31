@@ -1,5 +1,54 @@
 # Alterações
 
+## 1.33.1 — 31/10/2026
+
+- A verificação Turnstile do formulário usa o helper compartilhado `Core\Captcha`; comportamento e constantes `DT_VA_TURNSTILE_*` iguais.
+- Os assets usam `Core\Loader::asset()` (serve o `.min` quando está atualizado).
+- O atalho Dovetail Studio → Virtual Assistant é registrado pelo próprio módulo, não mais pelo Core.
+
+## 1.33.0 — 25/10/2026
+
+- Emails enviados de um endereço do domínio do site (padrão `wordpress@` o domínio; campo "Sender email" ou `DT_VA_FROM`), com o email de solicitações em Reply-To. Antes o From era o email de solicitações (às vezes um Gmail), o que reprovava SPF/DMARC.
+- Privacidade: solicitações em Ferramentas > Exportar/Apagar dados pessoais, prazo de retenção (padrão 24 meses, `DT_VA_RETENTION_MONTHS`, apagadas pelo cron diário), anexo apagado junto com a solicitação e texto sugerido para a política de privacidade.
+- Datas fechadas (feriados) no horário de atendimento, usadas no servidor e no `front.js`; a próxima abertura procura até 90 dias e é dita por data quando passa de uma semana.
+- Só `front-tab.css` (~4 KB) carrega com a página; o CSS do painel vem com o `front.js`. Removidos CSS do tema da Design Minds (pílula no menu, `overflow-x: hidden` em `html, body` no celular, fonte DM Sans); o widget usa a fonte do tema.
+- Prompt em duas partes: regras e base de conhecimento primeiro (cache de prompt da OpenAI e `cache_control` da Anthropic), o serviço escolhido no fim. Diagnóstico dos provedores gravado só quando o resultado muda.
+- `/event` exige o token do visitante (guardado no `sessionStorage` da aba).
+- Textos neutros ("call" em vez de "ring", sem exemplos irlandeses), ortografia padrão American English (opção British/Irish), nome da empresa e do remetente padrão = título do site.
+- Enquanto o assistente está oculto, um aviso diz quais campos obrigatórios faltam (Phone — display, Public email), com link para eles, nas telas do Studio e no Painel e na tela de Plugins do WordPress; os campos ficam marcados com *. Os dados públicos são salvos no `admin_init`, antes dos avisos, então o aviso some no próprio salvamento.
+- Eventos agendados registrados no `init` (sem tradução antes do `init`).
+- Respostas das Step questions criadas no admin agora entram no briefing e no email da equipe; porta com serviço próprio aparece como tipo da solicitação. Exemplos do admin em inglês (agência de marketing e design), docs em inglês e USAGE.md detalhado; `plan.md` removido.
+- URL do `/config` com versão que muda ao salvar qualquer configuração do assistente: mudanças aparecem no próximo carregamento, sem esperar o cache de 5 min. Dica ao vivo no Add a door mostrando qual etapa a porta abre (Service + 1) e se ela existe. AI Keys: "Primary provider"/"Secondary provider", "OpenAI" e status traduzíveis.
+- Textos restantes traduzíveis (botão de download, título da solicitação, erros de JSON, dias da semana no admin).
+
+## 1.32.0 — 24/10/2026
+
+### Segurança
+
+- Removido o endpoint de hot-patch `POST /wp-json/dt-va/v1/front` e a função `dt_va_route_front()`. Ele permitia a um admin (via senha de aplicativo) sobrescrever `front.html`, `front.css`, `front.js`, `knowledge.md`, as Company notes e o próprio `runtime.php`, o que equivalia a executar PHP arbitrário pela API e ignorava `DISALLOW_FILE_EDIT`/`DISALLOW_FILE_MODS`. Alterações de código passam por git/ZIP (plugin ou módulo em Dovetail Studio → Modules); knowledge base e Company notes continuam editáveis no admin. Os backups `.prev` públicos deixam de ser criados.
+- IP do visitante pelo helper `Core\Http`: cabeçalhos de proxy só valem vindos da Cloudflare ou de `DOVETAIL_STUDIO_TRUSTED_PROXIES`. Limites globais por hora (`DT_VA_ASK_GLOBAL_PER_HOUR`, `DT_VA_SUBMIT_GLOBAL_PER_HOUR`).
+- Novo `GET /token`: token assinado e ligado ao IP, exigido por `/ask` e `/submit` (este exige token com pelo menos 3 s).
+- Email de confirmação ao visitante sem nenhum texto digitado por ele (nem nome nem brief). Filtro `dt_va_client_confirmation_body`. `Reply-To` sem quebras de linha.
+- Anexos com nome aleatório, `.htaccess`/`index.php` em `uploads/dt-va/`, download pelo admin (`admin-post.php?action=dt_va_download`) e meta box na enquiry.
+- `dt_enquiry` com capabilities próprias mapeadas para `manage_options`.
+
+### Correções e melhorias
+
+- Carregamento sob demanda: em toda página só a aba, o `front-loader.js` (~1 KB) e o CSS; a configuração (`GET /config`) e o `front.js` carregam no primeiro hover/foco/clique na aba ou quando a página fica ociosa. Arquivos `.min` gerados por `php tools/build.php`.
+- Horários: `src/services/hours.php` lê Opening hours e o fuso do site; usado no servidor (emails, convite `.ics`, lembretes) e enviado ao `front.js`. "Mon to Fri" / "Monday to Friday" vêm dos dias configurados.
+- Tradução: todos os textos (admin, emails, front-end) com `__()`; o `front.js` usa `__()`/`_f()` com as traduções enviadas pelo servidor (`i18n-js.php`, gerado). Rótulos do brief lidos no servidor com as mesmas traduções. A IA responde no idioma do visitante.
+- Ligação sem email: o formulário não envia mais `callback@no-email.invalid`; o servidor aceita ligação sem email e não envia confirmação nem Reply-To.
+- Cartão de contato sem cidade não quebra a frase; textos de "próximos passos" e o nudge ficaram genéricos; removida a faixa de avaliação Google específica do tema da Design Minds.
+- Referência `DT-AAMM-XXXXXX` única; o digest lê o orçamento do brief; `/token` com limite próprio (`DT_VA_TOKEN_PER_HOUR`); teto de 15 s por pergunta (`DT_VA_ASK_DEADLINE`); nome, email e telefone não ficam no `localStorage`.
+- Avisos do módulo pelo hook `dovetail_studio_notices` (o Core remove os demais avisos nas telas do Studio).
+- Removido todo código de compatibilidade com instalações anteriores (nenhum site usa o módulo): limpeza do antigo cron `dt_va_google_refresh`, proteção retroativa da pasta de uploads, busca de anexos antigos pelo nome do arquivo, registro do post type para o caso WPCode e a deduplicação de `q` para clientes JS antigos.
+- Limpeza das estatísticas semanais: `createFromFormat('o-W')` substituído por `setISODate()`.
+- Removidos todos os dados da Design Minds do código: defaults neutros em `front.js`, `front.html` e no email, `knowledge.md` virou um modelo genérico, destino padrão das enquiries = `admin_email`. Sem migração (nenhum site usava o módulo). O assistente fica oculto até o telefone e o email públicos estarem configurados.
+- Chaves de IA sempre salvas criptografadas com `Core\Crypto`.
+- Eventos em contadores atômicos (uma linha por contador, incremento em SQL), consolidados a cada 15 min por `dt_va_flush_events`.
+- `dt_va_public_defaults()` em cache (memória + transient invalidado quando `front.js` muda).
+- Versão lida do `module.php`; URL do módulo via `Loader::path_url()`.
+
 ## Não lançado
 
 ### Documentação — 30/09/2026

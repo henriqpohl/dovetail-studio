@@ -1,0 +1,13 @@
+{
+	"version": "0.2",
+	"language": "en,en-GB",
+	"ignorePaths": [ "vendor/**", "node_modules/**", "**/*.min.js", "**/*.min.css", "languages/**", "modules/virtual-assistant/src/services/i18n-js.php", "composer.lock" ],
+	"ignoreRegExpList": [ "/\\b[A-Z0-9]{12,}\\b/g" ],
+	"words": [
+		"wpdb", "postmeta", "esc", "kses", "nonce", "nonces", "noindex", "nofollow", "autoload", "textdomain", "wp-config",
+		"phpcs", "phpcbf", "wpcs", "slevomat", "dealerdirect",
+		"dovetail", "dt-va", "Mailchimp", "WooCommerce", "Yoast", "SEOPress", "AIOSEO", "Rank Math",
+		"JSON-LD", "schema.org", "sameAs", "worksFor", "returnPolicyCountry", "productGroupID",
+		"ReDoS", "Imunify", "Wordfence", "Pwned", "pwnedpasswords", "allowlist", "allowlisted", "oEmbed", "lostpw", "unblock", "unblocked", "unblocking", "Turnstile", "TOTP", "otpauth", "multicall", "pingbacks", "Pingback", "grecaptcha", "Authy", "siteverify", "WPVulnerability", "wpvulnerability", "utilise", "colour", "specialise", "organisation", "enquiry", "enquiries", "labelled"
+	]
+}

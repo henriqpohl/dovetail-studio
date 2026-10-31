@@ -1,0 +1,23 @@
+# Files left out of the plugin ZIP (wp dist-archive, 10up deploy action and similar tools read this list).
+/.git
+/.github
+.gitignore
+.gitattributes
+.distignore
+.DS_Store
+/tests
+/tools
+/test.md
+/CONTRIBUTING.md
+/AGENTS.md
+/CLAUDE.md
+/.ai
+/.claude
+/.agents
+/vendor
+/node_modules
+composer.json
+composer.lock
+cspell.json
+phpcs.xml.dist
+.editorconfig

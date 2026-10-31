@@ -111,6 +111,18 @@ final class Breadcrumbs {
 		$items  = $this->get_items();
 		$last   = count( $items ) - 1;
 
+		// Google needs a URL on every item but the last, so a parent without a link is left out of the schema.
+		$items = array_values(
+			array_filter(
+				$items,
+				function ( $item, $index ) use ( $last ) {
+					return $index === $last || '' !== $item['url'];
+				},
+				ARRAY_FILTER_USE_BOTH
+			)
+		);
+		$last  = count( $items ) - 1;
+
 		if ( $last < 1 ) {
 			return $pieces;
 		}
@@ -125,7 +137,7 @@ final class Breadcrumbs {
 			);
 
 			// The current page is the last item and is identified by the list itself.
-			if ( $index < $last && '' !== $item['url'] ) {
+			if ( $index < $last ) {
 				$element['item'] = $item['url'];
 			}
 
@@ -163,7 +175,9 @@ final class Breadcrumbs {
 		$result = array();
 
 		foreach ( $this->normalize( $filtered ) as $index => $item ) {
-			$original = isset( $links[ $index ] ) && is_array( $links[ $index ] ) ? $links[ $index ] : array();
+			$original = isset( $links[ $index ] ) && is_array( $links[ $index ] )
+				? $links[ $index ]
+				: array();
 			$same_url = isset( $original['url'] ) && $original['url'] === $item['url'];
 			$link     = $same_url ? $original : array();
 
@@ -248,7 +262,10 @@ final class Breadcrumbs {
 
 		if ( is_home() ) {
 			$posts_page = (int) get_option( 'page_for_posts' );
-			$current    = $this->item( $posts_page ? get_the_title( $posts_page ) : __( 'Blog', 'dovetail-studio' ), $posts_page ? get_permalink( $posts_page ) : home_url( '/' ) );
+			$current    = $this->item(
+				$posts_page ? get_the_title( $posts_page ) : __( 'Blog', 'dovetail-studio' ),
+				$posts_page ? get_permalink( $posts_page ) : home_url( '/' )
+			);
 		} elseif ( is_singular() ) {
 			$post = get_queried_object();
 
@@ -260,16 +277,26 @@ final class Breadcrumbs {
 			$term = get_queried_object();
 
 			if ( $term instanceof \WP_Term ) {
-				$items   = array_merge( $items, $this->taxonomy_parent( $term->taxonomy ), $this->term_ancestors( $term ) );
+				$items   = array_merge(
+					$items,
+					$this->taxonomy_parent( $term->taxonomy ),
+					$this->term_ancestors( $term )
+				);
 				$current = $this->item( $term->name, get_term_link( $term ) );
 			}
 		} elseif ( is_post_type_archive() ) {
 			$post_type = get_query_var( 'post_type' );
 			$post_type = is_array( $post_type ) ? reset( $post_type ) : $post_type;
-			$current   = $this->item( post_type_archive_title( '', false ), is_string( $post_type ) ? get_post_type_archive_link( $post_type ) : '' );
+			$current   = $this->item(
+				post_type_archive_title( '', false ),
+				is_string( $post_type ) ? get_post_type_archive_link( $post_type ) : ''
+			);
 		} elseif ( is_author() ) {
 			$author  = get_queried_object();
-			$current = $this->item( $author instanceof \WP_User ? $author->display_name : '', get_author_posts_url( get_queried_object_id() ) );
+			$current = $this->item(
+				$author instanceof \WP_User ? $author->display_name : '',
+				get_author_posts_url( get_queried_object_id() )
+			);
 		} elseif ( is_search() ) {
 			/* translators: %s: search query. */
 			$current = $this->item( sprintf( __( 'Search results for "%s"', 'dovetail-studio' ), get_search_query( false ) ), get_search_link() );
@@ -282,7 +309,10 @@ final class Breadcrumbs {
 
 			if ( $month && ( is_month() || is_day() ) ) {
 				$items[] = $current;
-				$current = $this->item( date_i18n( 'F', mktime( 0, 0, 0, $month, 1, $year ) ), get_month_link( $year, $month ) );
+				$current = $this->item(
+					date_i18n( 'F', mktime( 0, 0, 0, $month, 1, $year ) ),
+					get_month_link( $year, $month )
+				);
 			}
 
 			if ( $day && is_day() ) {
@@ -404,6 +434,7 @@ final class Breadcrumbs {
 			foreach ( get_object_taxonomies( $post->post_type, 'objects' ) as $object ) {
 				if ( $object->hierarchical && $object->public ) {
 					$taxonomy = $object->name;
+
 					break;
 				}
 			}
@@ -469,7 +500,9 @@ final class Breadcrumbs {
 	 */
 	private function home_label() {
 		$options = Schema::get_options();
-		$label   = isset( $options['breadcrumbs_home_label'] ) ? trim( (string) $options['breadcrumbs_home_label'] ) : '';
+		$label   = isset( $options['breadcrumbs_home_label'] )
+			? trim( (string) $options['breadcrumbs_home_label'] )
+			: '';
 
 		return '' !== $label ? $label : __( 'Home', 'dovetail-studio' );
 	}
@@ -507,7 +540,9 @@ final class Breadcrumbs {
 			}
 
 			$label = isset( $item['label'] ) && is_scalar( $item['label'] ) ? (string) $item['label'] : '';
-			$label = trim( html_entity_decode( wp_strip_all_tags( $label ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+			$label = trim(
+				html_entity_decode( wp_strip_all_tags( $label ), ENT_QUOTES | ENT_HTML5, 'UTF-8' )
+			);
 			$url   = isset( $item['url'] ) && is_string( $item['url'] ) ? esc_url_raw( $item['url'] ) : '';
 
 			if ( '' === $label ) {

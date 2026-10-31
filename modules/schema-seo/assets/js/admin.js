@@ -18,7 +18,7 @@
 		const documentHtml = new DOMParser().parseFromString( html, 'text/html' );
 		const scripts = Array.from( documentHtml.querySelectorAll( 'script[type="application/ld+json"]' ) );
 		const script = scripts.find( ( item ) => item.classList.contains( 'yoast-schema-graph' ) )
-			|| scripts.find( ( item ) => item.classList.contains( 'local-business-schema' ) )
+			|| scripts.find( ( item ) => item.classList.contains( 'dovetail-schema-graph' ) )
 			|| scripts.find( ( item ) => item.textContent.includes( '"@graph"' ) );
 
 		if ( ! script ) {
@@ -29,8 +29,8 @@
 	}
 
 	async function loadSchemaDirectly() {
-		const previewUrl = new URL( lbsAdmin.previewUrl, window.location.href );
-		previewUrl.searchParams.set( '_lbs_schema_preview', Date.now().toString() );
+		const previewUrl = new URL( dovetailSchemaSeoAdmin.previewUrl, window.location.href );
+		previewUrl.searchParams.set( '_dovetail_schema_preview', Date.now().toString() );
 
 		const response = await fetch( previewUrl.toString(), {
 			cache: 'no-store',
@@ -47,10 +47,10 @@
 
 	async function loadSchemaThroughWordPress() {
 		const body = new URLSearchParams( {
-			action: 'lbs_schema_preview',
-			nonce: lbsAdmin.previewNonce
+			action: 'dovetail_schema_seo_preview',
+			nonce: dovetailSchemaSeoAdmin.previewNonce
 		} );
-		const response = await fetch( lbsAdmin.ajaxUrl, {
+		const response = await fetch( dovetailSchemaSeoAdmin.ajaxUrl, {
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
@@ -80,10 +80,10 @@
 					throw new Error( 'copy-command-failed' );
 				}
 			}
-			setJsonStatus( lbsAdmin.previewCopied, 'success' );
+			setJsonStatus( dovetailSchemaSeoAdmin.previewCopied, 'success' );
 		} catch ( error ) {
 			$jsonOutput.trigger( 'focus' ).trigger( 'select' );
-			setJsonStatus( lbsAdmin.previewCopyError, 'error' );
+			setJsonStatus( dovetailSchemaSeoAdmin.previewCopyError, 'error' );
 		}
 	}
 
@@ -92,8 +92,8 @@
 
 		const target = $( this ).data( 'target' );
 		const frame = wp.media( {
-			title: lbsAdmin.mediaTitle,
-			button: { text: lbsAdmin.mediaButton },
+			title: dovetailSchemaSeoAdmin.mediaTitle,
+			button: { text: dovetailSchemaSeoAdmin.mediaButton },
 			library: { type: 'image' },
 			multiple: false
 		} );
@@ -111,13 +111,13 @@
 		$loadJson.prop( 'disabled', true );
 		$copyJson.prop( 'disabled', true );
 		$jsonOutput.val( '' );
-		setJsonStatus( lbsAdmin.previewUnsaved, 'warning' );
+		setJsonStatus( dovetailSchemaSeoAdmin.previewUnsaved, 'warning' );
 	} );
 
 	$loadJson.on( 'click', async function () {
 		$loadJson.prop( 'disabled', true );
 		$copyJson.prop( 'disabled', true );
-		setJsonStatus( lbsAdmin.previewLoading, 'loading' );
+		setJsonStatus( dovetailSchemaSeoAdmin.previewLoading, 'loading' );
 
 		try {
 			let json;
@@ -129,10 +129,10 @@
 
 			$jsonOutput.val( json );
 			$copyJson.prop( 'disabled', false );
-			setJsonStatus( lbsAdmin.previewReady, 'success' );
+			setJsonStatus( dovetailSchemaSeoAdmin.previewReady, 'success' );
 		} catch ( error ) {
 			$jsonOutput.val( '' );
-			setJsonStatus( lbsAdmin.previewError, 'error' );
+			setJsonStatus( dovetailSchemaSeoAdmin.previewError, 'error' );
 		} finally {
 			$loadJson.prop( 'disabled', false );
 		}

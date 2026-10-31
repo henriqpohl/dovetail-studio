@@ -1,0 +1,33 @@
+{
+	"name": "dovetail-consultancy/dovetail-studio",
+	"description": "Central toolkit for Dovetail Consultancy WordPress modules.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=8.0"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"slevomat/coding-standard": "^8",
+		"wp-coding-standards/wpcs": "^3.1"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"build": "php tools/build.php",
+		"lint": "phpcs",
+		"format": "phpcbf",
+		"test": "php tests/run.php"
+	},
+	"scripts-descriptions": {
+		"build": "Regenerate the translations template, compile translations and write the minified assets (run before committing).",
+		"lint": "Check the PHP code against the WordPress Coding Standards (phpcs.xml.dist).",
+		"format": "Fix what can be fixed automatically (indentation, spacing, one statement per line…).",
+		"test": "Run the PHP test suite."
+	}
+}
