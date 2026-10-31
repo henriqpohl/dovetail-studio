@@ -22,6 +22,10 @@ Login Guard protects the WordPress login inside WordPress: brute force lockouts,
 | `src/Admin.php` | Dovetail Studio → Login Guard: Blocking, Activity, Settings, Two-Factor, Captcha and Alerts tabs |
 | `src/Cli.php` | `wp dovetail login-guard list|block|unblock|clear|reset-2fa` |
 | `assets/js/recaptcha.js` | reCAPTCHA v3 token for the login and registration forms |
+| `views/admin-page.php`, `views/tab-*.php` | The admin screen and one template per tab |
+| `views/two-factor-form.php`, `views/two-factor-profile.php` | The code screen and the profile section |
+| `views/captcha-field.php`, `views/block-page.php` | The captcha field of the login forms and the block page message |
+| `views/partials/` | Checkbox and select rows, the score histogram (SVG) |
 
 Captcha tokens are verified by the shared `DovetailStudio\Core\Captcha` helper (also used by the Virtual Assistant). The admin screen uses the shared Studio design system and WordPress core's select-all checkbox; the only scripts the module adds load on the login and registration forms when the captcha is on: the provider's, and for reCAPTCHA v3 `assets/js/recaptcha.js`, which fetches and refreshes the token (minified by `tools/build.php`; `Core\Loader::asset()` serves the `.min.js`).
 

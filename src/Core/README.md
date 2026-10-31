@@ -15,6 +15,17 @@ A module manifest must provide `slug`, `name`, `version`, `bootstrap`, and `clas
 5. Call `boot()`.
 6. Register Studio admin pages and module-management handlers.
 
+## Templates
+
+`DovetailStudio\Core\View` renders the HTML templates of Core and the modules:
+
+- `View::render( $dir, $name, $args )` includes `$dir/views/$name.php`; `View::capture()` returns the output as a string.
+- Names are kebab-case paths inside `views/` (`admin-page`, `partials/checkbox-row`); anything else, `..` included, is refused.
+- The template runs in its own scope and sees only `$args`, never the caller's variables.
+- A missing template is reported with `_doing_it_wrong()` and renders nothing.
+
+The Dovetail Studio dashboard and Modules screens are in `src/Core/views/`.
+
 ## SEO services
 
 `src/Core/Seo/` holds infrastructure shared by schema modules and loaded before any module:
@@ -29,6 +40,9 @@ Make sure the manifest class matches the namespace and class declared in `src/Mo
 
 ### ZIP upload fails
 Check ZipArchive, filesystem write access, package structure, and path validation.
+
+### A screen is blank and the debug log says a template was not found
+Check that `views/<name>.php` exists in the directory passed to `View::render()` (the module root, not `src/`) and that the name is lowercase kebab-case.
 
 ### Two JSON-LD graphs appear
 Yoast SEO printed its graph and a module printed its own script. Modules must add pieces to `dovetail_studio_schema_graph` (standalone) or `wpseo_schema_graph` (Yoast) only.

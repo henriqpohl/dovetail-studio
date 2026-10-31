@@ -24,6 +24,10 @@ WooCommerce's BreadcrumbList is removed. Without Yoast SEO, shop pages (shop, pr
 
 Each setting can be switched off individually: noindex, follow on cart/checkout/My Account (WordPress robots and Yoast robots); a canonical URL without filter and sorting parameters on shop and product taxonomy archives when no SEO plugin prints one; hidden products excluded from the WordPress and Yoast SEO sitemaps.
 
+## Structure
+
+`src/Module.php` defines the constants and loads `src/functions.php` (settings, graph integration, breadcrumbs, technical SEO). The settings screen markup is in `views/admin-page.php`, with the status badge and the missing WooCommerce notice in `views/partials/`.
+
 ## Hooks
 
 | Hook | Type | Purpose |

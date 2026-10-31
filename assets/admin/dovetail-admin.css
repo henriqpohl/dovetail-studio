@@ -1,9 +1,54 @@
+/*
+ * Design tokens: every colour, shadow and font size of the Studio screens. Rules use only these.
+ * Set on the body class too, so list and edit screens of module post types can use them.
+ */
+.dovetail-admin-page,
 .dovetail-wrap {
-	--dovetail-border: #dcdcde;
+	/* Neutrals */
+	--dovetail-text: #1d2327;
+	--dovetail-text-secondary: #3c434a;
 	--dovetail-muted: #646970;
-	--dovetail-surface: #fff;
+	--dovetail-border-strong: #c3c4c7;
+	--dovetail-border: #dcdcde;
+	--dovetail-border-soft: #e0e2e5;
+	--dovetail-divider: #edf0f2;
+	--dovetail-neutral-soft: #f0f0f1;
 	--dovetail-soft: #f6f7f7;
+	--dovetail-surface: #fff;
+	--dovetail-surface-translucent: rgba( 255, 255, 255, 0.96 );
+
+	/* Primary */
 	--dovetail-primary: #2271b1;
+	--dovetail-primary-text: #135e96;
+	--dovetail-primary-border: #9ec2df;
+	--dovetail-primary-soft: #f0f6fc;
+
+	/* Status */
+	--dovetail-success: #00a32a;
+	--dovetail-success-text: #116329;
+	--dovetail-success-soft: #edfaef;
+	--dovetail-warning: #dba617;
+	--dovetail-warning-text: #8a6116;
+	--dovetail-danger: #d63638;
+	--dovetail-danger-text: #b32d2e;
+	--dovetail-danger-hover: #8a2424;
+	--dovetail-danger-soft: #fcf0f1;
+
+	/* Shadows */
+	--dovetail-shadow-sm: 0 1px 3px rgba( 0, 0, 0, 0.045 );
+	--dovetail-shadow-md: 0 2px 8px rgba( 0, 0, 0, 0.06 );
+	--dovetail-shadow-up: 0 -2px 10px rgba( 0, 0, 0, 0.07 );
+
+	/* Font sizes: interface text in rem; titles fluid between a 375px and a 1200px wide screen. */
+	--dovetail-font-xs: 0.6875rem;
+	--dovetail-font-sm: 0.75rem;
+	--dovetail-font-md: 0.8125rem;
+	--dovetail-font-lg: 0.875rem;
+	--dovetail-font-title: clamp( 1rem, 0.943rem + 0.242vw, 1.125rem );
+	--dovetail-font-display: clamp( 1.375rem, 1.26rem + 0.485vw, 1.625rem );
+}
+
+.dovetail-wrap {
 	max-width: 1120px;
 	padding-bottom: 24px;
 }
@@ -27,7 +72,7 @@ body.dovetail-admin-page .update-nag {
 .dovetail-page-header h1 {
 	margin: 0 0 5px;
 	padding: 0;
-	font-size: 26px;
+	font-size: var( --dovetail-font-display );
 	font-weight: 650;
 	line-height: 1.25;
 }
@@ -35,7 +80,7 @@ body.dovetail-admin-page .update-nag {
 .dovetail-page-header p {
 	margin: 0;
 	color: var( --dovetail-muted );
-	font-size: 14px;
+	font-size: var( --dovetail-font-lg );
 }
 
 .dovetail-version {
@@ -45,7 +90,7 @@ body.dovetail-admin-page .update-nag {
 	border-radius: 999px;
 	background: var( --dovetail-surface );
 	color: var( --dovetail-muted );
-	font-size: 12px;
+	font-size: var( --dovetail-font-sm );
 	font-weight: 600;
 }
 
@@ -59,7 +104,7 @@ body.dovetail-admin-page .update-nag {
 	border: 1px solid var( --dovetail-border );
 	border-radius: 8px;
 	background: var( --dovetail-surface );
-	box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.04 );
+	box-shadow: var( --dovetail-shadow-sm );
 }
 
 .dovetail-status-dot {
@@ -68,18 +113,18 @@ body.dovetail-admin-page .update-nag {
 	height: 9px;
 	margin-top: 5px;
 	border-radius: 50%;
-	background: #2271b1;
-	box-shadow: 0 0 0 4px rgba( 34, 113, 177, 0.12 );
+	background: var( --dovetail-primary );
+	box-shadow: 0 0 0 4px color-mix( in srgb, var( --dovetail-primary ) 12%, transparent );
 }
 
 .dovetail-status.is-active .dovetail-status-dot {
-	background: #00a32a;
-	box-shadow: 0 0 0 4px rgba( 0, 163, 42, 0.12 );
+	background: var( --dovetail-success );
+	box-shadow: 0 0 0 4px color-mix( in srgb, var( --dovetail-success ) 12%, transparent );
 }
 
 .dovetail-status.is-warning .dovetail-status-dot {
-	background: #dba617;
-	box-shadow: 0 0 0 4px rgba( 219, 166, 23, 0.14 );
+	background: var( --dovetail-warning );
+	box-shadow: 0 0 0 4px color-mix( in srgb, var( --dovetail-warning ) 14%, transparent );
 }
 
 .dovetail-status strong {
@@ -89,7 +134,7 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-status p {
 	margin: 0;
-	color: #3c434a;
+	color: var( --dovetail-text-secondary );
 }
 
 .dovetail-section-nav {
@@ -104,8 +149,8 @@ body.dovetail-admin-page .update-nag {
 	overflow-x: auto;
 	border: 1px solid var( --dovetail-border );
 	border-radius: 8px;
-	background: rgba( 255, 255, 255, 0.96 );
-	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.06 );
+	background: var( --dovetail-surface-translucent );
+	box-shadow: var( --dovetail-shadow-md );
 	backdrop-filter: blur( 8px );
 }
 
@@ -113,14 +158,14 @@ body.dovetail-admin-page .update-nag {
 	flex: 0 0 auto;
 	padding: 7px 11px;
 	border-radius: 5px;
-	color: #2c3338;
+	color: var( --dovetail-text-secondary );
 	font-weight: 500;
 	text-decoration: none;
 }
 
 .dovetail-section-nav a:hover,
 .dovetail-section-nav a:focus {
-	background: #f0f6fc;
+	background: var( --dovetail-primary-soft );
 	color: var( --dovetail-primary );
 	box-shadow: none;
 }
@@ -133,22 +178,22 @@ body.dovetail-admin-page .update-nag {
 	border: 1px solid var( --dovetail-border );
 	border-radius: 9px;
 	background: var( --dovetail-surface );
-	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.045 );
+	box-shadow: var( --dovetail-shadow-sm );
 }
 
 .dovetail-card:target {
-	border-color: #9ec2df;
-	box-shadow: 0 0 0 1px rgba( 34, 113, 177, 0.08 );
+	border-color: var( --dovetail-primary-border );
+	box-shadow: 0 0 0 1px color-mix( in srgb, var( --dovetail-primary ) 8%, transparent );
 }
 
 .dovetail-card-header {
 	padding: 20px 24px 16px;
-	border-bottom: 1px solid #edf0f2;
+	border-bottom: 1px solid var( --dovetail-divider );
 }
 
 .dovetail-card-header h2 {
 	margin: 0;
-	font-size: 18px;
+	font-size: var( --dovetail-font-title );
 	font-weight: 650;
 	line-height: 1.35;
 }
@@ -164,7 +209,7 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-card > .form-table > tbody > tr:not( :last-child ) > th,
 .dovetail-card > .form-table > tbody > tr:not( :last-child ) > td {
-	border-bottom: 1px solid #f0f0f1;
+	border-bottom: 1px solid var( --dovetail-divider );
 }
 
 .dovetail-card > .form-table > tbody > tr > th {
@@ -191,7 +236,7 @@ body.dovetail-admin-page .update-nag {
 .dovetail-card input[type="time"],
 .dovetail-card select,
 .dovetail-card textarea {
-	border-color: #b8c0c8;
+	border-color: var( --dovetail-border-strong );
 	border-radius: 5px;
 }
 
@@ -226,7 +271,7 @@ body.dovetail-admin-page .update-nag {
 	max-width: 680px;
 	margin-top: 9px;
 	padding: 8px 10px;
-	border: 1px solid #e2e4e7;
+	border: 1px solid var( --dovetail-border-soft );
 	border-radius: 6px;
 	background: var( --dovetail-soft );
 }
@@ -236,7 +281,7 @@ body.dovetail-admin-page .update-nag {
 }
 
 .dovetail-source .description strong {
-	color: #1d6f42;
+	color: var( --dovetail-success-text );
 }
 
 .dovetail-media {
@@ -253,7 +298,7 @@ body.dovetail-admin-page .update-nag {
 .dovetail-hours {
 	max-width: 780px;
 	overflow: hidden;
-	border: 1px solid #e0e2e5;
+	border: 1px solid var( --dovetail-border-soft );
 	border-radius: 8px;
 	background: var( --dovetail-soft );
 }
@@ -267,7 +312,7 @@ body.dovetail-admin-page .update-nag {
 }
 
 .dovetail-hours-row:not( :last-child ) {
-	border-bottom: 1px solid #e0e2e5;
+	border-bottom: 1px solid var( --dovetail-border-soft );
 }
 
 .dovetail-day {
@@ -288,7 +333,7 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-hours-period {
 	color: var( --dovetail-muted );
-	font-size: 11px;
+	font-size: var( --dovetail-font-xs );
 	font-weight: 600;
 	text-transform: uppercase;
 }
@@ -312,7 +357,7 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-integration thead th {
 	padding: 10px 12px;
-	background: #f6f7f7;
+	background: var( --dovetail-soft );
 	font-weight: 600;
 }
 
@@ -323,9 +368,9 @@ body.dovetail-admin-page .update-nag {
 }
 
 .dovetail-integration-group th {
-	background: #f0f6fc;
-	color: #135e96;
-	font-size: 12px;
+	background: var( --dovetail-primary-soft );
+	color: var( --dovetail-primary-text );
+	font-size: var( --dovetail-font-sm );
 	letter-spacing: 0.02em;
 	text-transform: uppercase;
 }
@@ -334,19 +379,19 @@ body.dovetail-admin-page .update-nag {
 	display: inline-block;
 	padding: 3px 8px;
 	border-radius: 999px;
-	font-size: 12px;
+	font-size: var( --dovetail-font-sm );
 	font-weight: 600;
 	line-height: 1.5;
 }
 
 .dovetail-origin-badge.is-shared {
-	background: #f0f6fc;
-	color: #135e96;
+	background: var( --dovetail-primary-soft );
+	color: var( --dovetail-primary-text );
 }
 
 .dovetail-origin-badge.is-plugin {
-	background: #edfaef;
-	color: #116329;
+	background: var( --dovetail-success-soft );
+	color: var( --dovetail-success-text );
 }
 
 .dovetail-json-row > td {
@@ -362,19 +407,19 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-json-status {
 	color: var( --dovetail-muted );
-	font-size: 13px;
+	font-size: var( --dovetail-font-md );
 }
 
 .dovetail-json-status.is-success {
-	color: #116329;
+	color: var( --dovetail-success-text );
 }
 
 .dovetail-json-status.is-error {
-	color: #b32d2e;
+	color: var( --dovetail-danger-text );
 }
 
 .dovetail-json-status.is-warning {
-	color: #8a6116;
+	color: var( --dovetail-warning-text );
 }
 
 .dovetail-json-status.is-loading {
@@ -387,11 +432,11 @@ body.dovetail-admin-page .update-nag {
 	min-height: 420px;
 	margin-top: 14px;
 	padding: 14px;
-	border-color: #c3c4c7;
-	background: #f6f7f7;
-	color: #1d2327;
+	border-color: var( --dovetail-border-strong );
+	background: var( --dovetail-soft );
+	color: var( --dovetail-text );
 	font-family: Consolas, Monaco, monospace;
-	font-size: 12px;
+	font-size: var( --dovetail-font-sm );
 	line-height: 1.55;
 	white-space: pre;
 	resize: vertical;
@@ -407,8 +452,8 @@ body.dovetail-admin-page .update-nag {
 	padding: 12px 16px;
 	border: 1px solid var( --dovetail-border );
 	border-radius: 8px;
-	background: rgba( 255, 255, 255, 0.96 );
-	box-shadow: 0 -2px 10px rgba( 0, 0, 0, 0.07 );
+	background: var( --dovetail-surface-translucent );
+	box-shadow: var( --dovetail-shadow-up );
 	backdrop-filter: blur( 8px );
 }
 
@@ -530,10 +575,10 @@ body.dovetail-admin-page .update-nag {
 /* Dovetail Studio shared admin extensions. */
 .dovetail-section-nav a.is-active,
 .dovetail-section-nav a[aria-current="page"] {
-	background: #fff;
-	border-color: #2271b1;
-	color: #135e96;
-	box-shadow: 0 0 0 1px #2271b1;
+	background: var( --dovetail-surface );
+	border-color: var( --dovetail-primary );
+	color: var( --dovetail-primary-text );
+	box-shadow: 0 0 0 1px var( --dovetail-primary );
 }
 
 .dovetail-card-body {
@@ -562,7 +607,7 @@ body.dovetail-admin-page .update-nag {
 
 .dovetail-card-body .form-table tr:not(:last-child) > th,
 .dovetail-card-body .form-table tr:not(:last-child) > td {
-	border-bottom: 1px solid #edf0f2;
+	border-bottom: 1px solid var( --dovetail-divider );
 }
 
 .dovetail-card-body input.regular-text,
@@ -584,14 +629,14 @@ body.dovetail-admin-page .update-nag {
 	width: 100% !important;
 	max-width: none !important;
 	box-sizing: border-box;
-	border-color: #c3c4c7;
+	border-color: var( --dovetail-border-strong );
 	border-radius: 6px;
 	padding: 12px;
 }
 
 .dovetail-card-body hr {
 	border: 0;
-	border-top: 1px solid #edf0f2;
+	border-top: 1px solid var( --dovetail-divider );
 	margin: 28px -24px;
 }
 
@@ -618,16 +663,16 @@ body.dovetail-admin-page .update-nag {
 	align-items: center;
 	border-radius: 999px;
 	padding: 4px 9px;
-	font-size: 12px;
+	font-size: var( --dovetail-font-sm );
 	font-weight: 600;
 	line-height: 1;
-	background: #f0f0f1;
-	color: #50575e;
+	background: var( --dovetail-neutral-soft );
+	color: var( --dovetail-text-secondary );
 }
 
 .dovetail-badge.is-enabled {
-	background: #edfaef;
-	color: #116329;
+	background: var( --dovetail-success-soft );
+	color: var( --dovetail-success-text );
 }
 
 .dovetail-modules-table {
@@ -658,12 +703,58 @@ body.dovetail-admin-page .update-nag {
 }
 
 .dovetail-modules-table .button-link-delete {
-	color: #b32d2e;
-	border-color: #b32d2e;
+	color: var( --dovetail-danger-text );
+	border-color: var( --dovetail-danger-text );
 }
 
 .dovetail-modules-table .button-link-delete:hover,
 .dovetail-modules-table .button-link-delete:focus {
-	color: #8a2424;
-	border-color: #8a2424;
+	color: var( --dovetail-danger-hover );
+	border-color: var( --dovetail-danger-hover );
 }
+
+/* Monospace editor for JSON, Markdown and notes. */
+.dovetail-code-editor {
+	width: 100%;
+	max-width: 960px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: var( --dovetail-font-md );
+}
+
+/* A checkbox with its text on one line, at normal weight inside a form-table cell. */
+.dovetail-inline-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 400;
+}
+
+/* Required fields: the asterisk, and the row of a required field that is still empty. */
+.dovetail-required {
+	color: var( --dovetail-danger );
+	font-weight: 600;
+}
+
+.dovetail-field-missing th,
+.dovetail-field-missing td {
+	background: var( --dovetail-danger-soft );
+}
+
+.dovetail-field-missing input {
+	border-color: var( --dovetail-danger );
+}
+
+.dovetail-text-success {
+	color: var( --dovetail-success-text );
+}
+
+.dovetail-text-danger {
+	color: var( --dovetail-danger );
+}
+
+/* Inline SVG charts shrink with the screen. */
+.dovetail-chart svg {
+	max-width: 100%;
+	height: auto;
+}
+

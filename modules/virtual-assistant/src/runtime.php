@@ -32,13 +32,16 @@ add_action(
 			return;
 		}
 
-		wp_enqueue_script(
-			'dt-va-admin-json',
-			DOVETAIL_VIRTUAL_ASSISTANT_URL . 'assets/js/admin-json.js',
-			array(),
-			DOVETAIL_VIRTUAL_ASSISTANT_VERSION,
-			true
-		);
+		$json = dt_va_asset( 'assets/js/admin-json.js' );
+		$tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only picks the screen.
+
+		wp_enqueue_script( 'dt-va-admin-json', $json['url'], array(), $json['ver'], true );
+
+		if ( 'flow' === $tab ) {
+			$doors = dt_va_asset( 'assets/js/admin-doors.js' );
+
+			wp_enqueue_script( 'dt-va-admin-doors', $doors['url'], array(), $doors['ver'], true );
+		}
 	}
 );
 require_once __DIR__ . '/services/public-settings.php';
@@ -872,19 +875,18 @@ add_action(
 			'dt-va-attachment',
 			__( 'Attachment', 'dovetail-studio' ),
 			function ( $post ) {
-				$path = dt_va_attachment_path( $post->ID );
-
-				if ( '' === $path ) {
-					echo '<p>'
-						. ( get_post_meta( $post->ID, 'file', true ) ? esc_html__( 'The file is no longer on the server.', 'dovetail-studio' ) : esc_html__( 'No file was attached.', 'dovetail-studio' ) )
-						. '</p>';
-
-					return;
-				}
-
+				$path  = dt_va_attachment_path( $post->ID );
 				$label = (string) get_post_meta( $post->ID, 'file_original', true );
-				/* translators: %s: file name. */
-				echo '<p><a class="button" href="' . esc_url( dt_va_attachment_url( $post->ID ) ) . '">' . esc_html( sprintf( __( 'Download %s', 'dovetail-studio' ), '' !== $label ? $label : basename( $path ) ) ) . '</a></p>';
+
+				\DovetailStudio\Core\View::render(
+					DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+					'partials/attachment-box',
+					array(
+						'url'     => '' !== $path ? dt_va_attachment_url( $post->ID ) : '',
+						'name'    => '' !== $label ? $label : basename( $path ),
+						'removed' => (bool) get_post_meta( $post->ID, 'file', true ),
+					)
+				);
 			},
 			'dt_enquiry',
 			'side'
@@ -1095,30 +1097,14 @@ function dt_va_company_notes_page() {
 		\DovetailStudio\Core\AdminScreens::notice( 'success', esc_html__( 'Saved.', 'dovetail-studio' ) );
 	}
 
-	$v = (string) get_option( 'dt_va_company_notes', '' );
-	$n = count( dt_va_company_notes_sections() );
-	echo '<div class="wrap"><h1>'
-		. esc_html__( 'Company notes for the AI Assistant', 'dovetail-studio' ) . '</h1>';
-	echo '<p>'
-		. esc_html__( 'Private. When an enquiry names one of these clients (company, name, email domain, project or the description), the matching section is added to the bottom of the studio email only. Nothing here is shown to visitors or sent to clients.', 'dovetail-studio' )
-		. '</p>';
-	echo '<p>'
-		. wp_kses_post(
-			__( 'Format: one <code>## Client name</code> heading per client, an optional <code>aliases: other name, domain.com, project name</code> line, then notes.', 'dovetail-studio' )
-		) . ' '
-		. esc_html(
-			sprintf(
-				/* translators: %d: number of clients. */
-				_n( '%d client on file.', '%d clients on file.', $n, 'dovetail-studio' ),
-				$n
-			)
-		) . '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_company_notes' );
-	echo '<textarea name="dt_va_notes" rows="30" style="width:100%;max-width:960px;font-family:Menlo,Consolas,monospace;font-size:13px">'
-		. esc_textarea( $v ) . '</textarea>';
-	echo '<p><button class="button button-primary">'
-		. esc_html__( 'Save notes', 'dovetail-studio' ) . '</button></p></form></div>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'company-notes',
+		array(
+			'notes'   => (string) get_option( 'dt_va_company_notes', '' ),
+			'clients' => count( dt_va_company_notes_sections() ),
+		)
+	);
 }
 
 /* ================= AT A GLANCE, HOURS, SELF-CHECK (2.8) ================= */
@@ -1766,35 +1752,24 @@ add_filter(
 add_action(
 	'manage_dt_enquiry_posts_custom_column',
 	function ( $col, $id ) {
-		if ( 'ref' === $col ) {
-			echo esc_html( get_post_meta( $id, 'ref', true ) );
+		if ( ! in_array( $col, array( 'ref', 'contact', 'answered', 'callback' ), true ) ) {
+			return;
 		}
 
-		if ( 'contact' === $col ) {
-			echo esc_html( get_post_meta( $id, 'email', true ) )
-				. '<br>' . esc_html( get_post_meta( $id, 'phone', true ) );
-		}
-
-		if ( 'answered' === $col ) {
-			$a = get_post_meta( $id, 'dt_va_answered', true );
-			echo $a
-				? '<span style="color:#1a7f37">'
-					. esc_html__( 'Yes,', 'dovetail-studio' ) . ' ' . esc_html( $a ) . '</span><br><a href="'
-					. esc_url( dt_va_answered_url( $id ) ) . '">' . esc_html__( 'Undo', 'dovetail-studio' )
-					. '</a>'
-				: '<a href="'
-					. esc_url( dt_va_answered_url( $id ) ) . '">'
-					. esc_html__( 'Mark as answered', 'dovetail-studio' ) . '</a>';
-		}
-
-		if ( 'callback' === $col ) {
-			$cb = get_post_meta( $id, 'callback', true );
-			echo 'yes' === $cb
-				? '<strong style="color:#E2231A">'
-					. esc_html__( 'Yes', 'dovetail-studio' ) . '</strong> '
-					. esc_html( get_post_meta( $id, 'time', true ) )
-				: esc_html__( 'No', 'dovetail-studio' );
-		}
+		\DovetailStudio\Core\View::render(
+			DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+			'partials/enquiry-column',
+			array(
+				'column'       => $col,
+				'ref'          => (string) get_post_meta( $id, 'ref', true ),
+				'email'        => (string) get_post_meta( $id, 'email', true ),
+				'phone'        => (string) get_post_meta( $id, 'phone', true ),
+				'answered'     => (string) get_post_meta( $id, 'dt_va_answered', true ),
+				'answered_url' => dt_va_answered_url( $id ),
+				'callback'     => 'yes' === get_post_meta( $id, 'callback', true ),
+				'time'         => (string) get_post_meta( $id, 'time', true ),
+			)
+		);
 	},
 	10,
 	2
@@ -1838,10 +1813,14 @@ function dt_va_frontend_missing_notice() {
 		. ( $missing ? '#dt-va-public-' . key( $missing ) . '-row' : '' );
 	/* translators: %s: comma-separated field names. */
 	$fields = $missing ? sprintf( __( 'Fill in the required fields: %s.', 'dovetail-studio' ), implode( ', ', $missing ) ) : __( 'A filter (dt_va_frontend_ready) keeps it hidden.', 'dovetail-studio' );
-	echo '<div class="notice dovetail-notice inline notice-warning"><p><strong>'
-		. esc_html__( 'The AI Assistant is not shown on the site yet.', 'dovetail-studio' ) . '</strong> '
-		. esc_html( $fields ) . ' <a href="' . esc_url( $link ) . '">'
-		. esc_html__( 'VA Enquiries > Settings > Company', 'dovetail-studio' ) . '</a></p></div>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/frontend-missing-notice',
+		array(
+			'fields' => $fields,
+			'link'   => $link,
+		)
+	);
 }
 
 add_action( 'dovetail_studio_notices', 'dt_va_frontend_missing_notice' );
@@ -1959,29 +1938,6 @@ function dt_va_asset( $relative ) {
 	return \DovetailStudio\Core\Loader::asset( dirname( __DIR__ ), $relative );
 }
 
-add_action(
-	'wp_head',
-	function () {
-		if ( is_admin() || ! dt_va_frontend_ready() ) {
-			return;
-		}
-
-		$js  = dt_va_asset( 'assets/js/front.js' );
-		$css = dt_va_asset( 'assets/css/front.css' );
-		// Only the tab styles block rendering; the panel's styles and script come together, when the assistant loads.
-		$loader = array(
-			'config' => esc_url_raw( add_query_arg( 'v', dt_va_config_version(), rest_url( 'dt-va/v1/config' ) ) ),
-			'script' => add_query_arg( 'ver', $js['ver'], $js['url'] ),
-			'style'  => add_query_arg( 'ver', $css['ver'], $css['url'] ),
-			'idleMs' => 3000,
-		);
-		echo '<script data-no-optimize="1" data-no-defer="1" data-cfasync="false">window.DT_VA_LOADER='
-			. wp_json_encode( $loader ) . ';</script>' . "\n";
-		echo dt_va_theme_css() . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Style tag built from sanitized theme values.
-	},
-	5
-);
-
 /* ================= FRONT END: tab styles + the small loader; the panel styles and front.js are loaded by the loader ================= */
 add_action(
 	'wp_enqueue_scripts',
@@ -1992,7 +1948,17 @@ add_action(
 
 		$css    = dt_va_asset( 'assets/css/front-tab.css' );
 		$loader = dt_va_asset( 'assets/js/front-loader.js' );
+		$js     = dt_va_asset( 'assets/js/front.js' );
+		$panel  = dt_va_asset( 'assets/css/front.css' );
+		$theme  = dt_va_theme_css();
+
 		wp_enqueue_style( 'dt-va-tab', $css['url'], array(), $css['ver'] );
+
+		// Printed right after front-tab.css, so the saved colours apply before the first paint.
+		if ( '' !== $theme ) {
+			wp_add_inline_style( 'dt-va-tab', $theme );
+		}
+
 		wp_enqueue_script(
 			'dt-va-loader',
 			$loader['url'],
@@ -2003,6 +1969,33 @@ add_action(
 				'strategy'  => 'defer',
 			)
 		);
+		// Only the tab styles block rendering; the panel's styles and script come together, when the assistant loads.
+		wp_add_inline_script(
+			'dt-va-loader',
+			'window.DT_VA_LOADER=' . wp_json_encode(
+				array(
+					'config' => esc_url_raw( add_query_arg( 'v', dt_va_config_version(), rest_url( 'dt-va/v1/config' ) ) ),
+					'script' => add_query_arg( 'ver', $js['ver'], $js['url'] ),
+					'style'  => add_query_arg( 'ver', $panel['ver'], $panel['url'] ),
+					'idleMs' => 3000,
+				)
+			) . ';',
+			'before'
+		);
+	}
+);
+
+/* Page optimisers must not defer, combine or delay the loader settings: the loader reads them when it runs. */
+add_filter(
+	'wp_inline_script_attributes',
+	function ( $attributes ) {
+		if ( isset( $attributes['id'] ) && 'dt-va-loader-js-before' === $attributes['id'] ) {
+			$attributes['data-no-optimize'] = '1';
+			$attributes['data-no-defer']    = '1';
+			$attributes['data-cfasync']     = 'false';
+		}
+
+		return $attributes;
 	}
 );
 

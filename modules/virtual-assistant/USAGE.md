@@ -458,7 +458,7 @@ Press the restart button (↻) in the chat: a conversation in progress keeps its
 Set a **Sender email** on the site's domain and configure SPF and DKIM for it, or use an SMTP plugin.
 
 ### Admin JSON tools do not load
-Confirm `assets/js/admin-json.js` exists and the current page is `dt-va-settings`.
+Confirm `assets/js/admin-json.js` exists and the current page is `dt-va-settings`. The live hint under **Add a door → Service** comes from `assets/js/admin-doors.js`, loaded on the Doors tab only.
 
 ### Knowledge changes are ignored
 Check the saved Knowledge base (or `resources/knowledge.md` when none is saved), then clear any object or page cache.

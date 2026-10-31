@@ -24,6 +24,7 @@ The module never prints its own `<script>`.
 - `src/Breadcrumbs.php` resolves the breadcrumb trail and adds BreadcrumbList to the standalone graph.
 - `src/functions.php` exposes `dovetail_studio_get_breadcrumbs()` for themes.
 - `src/Admin.php` renders the settings screen. Module JavaScript lives in `assets/js/admin.js`.
+- `views/admin-page.php` is the settings screen markup; its sections, fields, opening hours, JSON-LD preview and integration summary are in `views/partials/`.
 
 ## Breadcrumb trail
 

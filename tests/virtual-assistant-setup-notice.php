@@ -30,4 +30,4 @@ t('saved on admin_init', dt_va_public_value('COMPANY_EMAIL') === 'hello@example.
 t('no notice once the fields are filled in', strpos($notice(), 'not shown on the site yet') === false);
 $form = capture('dt_va_public_settings');
 t('save result shown in the form', strpos($form, 'Public settings saved.') !== false);
-t('required fields marked in the form', substr_count($form, 'class="dt-va-required"') === 3 && strpos($form, 'class="dt-va-missing"') === false);
+t('required fields marked in the form', substr_count($form, 'class="dovetail-required"') === 3 && strpos($form, 'class="dovetail-field-missing"') === false && strpos($form, '<style') === false);

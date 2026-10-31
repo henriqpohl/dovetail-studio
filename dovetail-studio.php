@@ -24,6 +24,7 @@ require_once DOVETAIL_STUDIO_PATH . 'src/Core/Mail.php';
 require_once DOVETAIL_STUDIO_PATH . 'src/Core/Seo/Environment.php';
 require_once DOVETAIL_STUDIO_PATH . 'src/Core/Seo/SchemaGraph.php';
 require_once DOVETAIL_STUDIO_PATH . 'src/Core/AdminScreens.php';
+require_once DOVETAIL_STUDIO_PATH . 'src/Core/View.php';
 require_once DOVETAIL_STUDIO_PATH . 'src/Core/Loader.php';
 
 // Translations for the Studio and every module (languages/dovetail-studio-{locale}.mo).

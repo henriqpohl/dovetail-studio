@@ -170,47 +170,17 @@ function dt_va_digest_settings() {
 		);
 	}
 
-	echo '<h2>'
-		. esc_html__( 'Weekly digest', 'dovetail-studio' ) . '</h2><p>'
-		. esc_html__( 'Schedule for the weekly summary email of enquiries and the assistant funnel. Default: Monday 08:00 in the site time zone (Settings > General), sent to the enquiry email above.', 'dovetail-studio' )
-		. '</p>';
-	echo '<form method="post">';
-	wp_nonce_field( 'dt_va_digest' );
-	echo '<input type="hidden" name="dt_va_digest" value="1"><table class="form-table">';
-	echo '<tr><th><label for="dt-va-digest-day">'
-		. esc_html__( 'Day', 'dovetail-studio' )
-		. '</label></th><td><select id="dt-va-digest-day" name="digest_day">';
-	$labels = array(
-		'monday'    => __( 'Monday', 'dovetail-studio' ),
-		'tuesday'   => __( 'Tuesday', 'dovetail-studio' ),
-		'wednesday' => __( 'Wednesday', 'dovetail-studio' ),
-		'thursday'  => __( 'Thursday', 'dovetail-studio' ),
-		'friday'    => __( 'Friday', 'dovetail-studio' ),
-		'saturday'  => __( 'Saturday', 'dovetail-studio' ),
-		'sunday'    => __( 'Sunday', 'dovetail-studio' ),
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/digest-settings',
+		array(
+			'days'      => dt_va_digest_days(),
+			'day'       => dt_va_digest_day(),
+			'time'      => dt_va_digest_time(),
+			'recipient' => trim( (string) get_option( 'dt_va_digest_recipient', '' ) ),
+			'to'        => dt_va_company_value( 'to' ),
+		)
 	);
-
-	foreach ( dt_va_digest_days() as $d ) {
-		echo '<option value="'
-			. esc_attr( $d ) . '" ' . selected( dt_va_digest_day(), $d, false ) . '>'
-			. esc_html( $labels[ $d ] ) . '</option>';
-	}
-
-	echo '</select></td></tr>';
-	echo '<tr><th><label for="dt-va-digest-time">'
-		. esc_html__( 'Time', 'dovetail-studio' )
-		. '</label></th><td><input type="time" id="dt-va-digest-time" name="digest_time" value="'
-		. esc_attr( dt_va_digest_time() ) . '"><p class="description">'
-		. esc_html__( 'Site time zone (Settings > General), 24-hour.', 'dovetail-studio' ) . '</p></td></tr>';
-	echo '<tr><th><label for="dt-va-digest-recipient">'
-		. esc_html__( 'Recipient (optional)', 'dovetail-studio' )
-		. '</label></th><td><input class="regular-text" id="dt-va-digest-recipient" name="digest_recipient" type="email" value="'
-		. esc_attr( trim( (string) get_option( 'dt_va_digest_recipient', '' ) ) ) . '" placeholder="'
-		. esc_attr( dt_va_company_value( 'to' ) ) . '"><p class="description">'
-		. esc_html__( 'Leave blank to send the digest to the enquiry email above.', 'dovetail-studio' )
-		. '</p></td></tr>';
-	echo '</table><p><button class="button button-primary">'
-		. esc_html__( 'Save digest schedule', 'dovetail-studio' ) . '</button></p></form>';
 }
 
 function dt_va_company_settings() {
@@ -294,58 +264,35 @@ function dt_va_company_settings() {
 		);
 	}
 
-	echo '<h2>'
-		. esc_html__( 'Company', 'dovetail-studio' ) . '</h2><p>'
-		. esc_html__( 'Configure the public company name and the email identity used by the assistant.', 'dovetail-studio' )
-		. '</p><form method="post">';
-	wp_nonce_field( 'dt_va_company' );
-	echo '<input type="hidden" name="dt_va_company" value="1"><table class="form-table">';
+	$help   = array(
+		'name'      => __( 'Displayed in the assistant and used in enquiry email copy. Defaults to the site title.', 'dovetail-studio' ),
+		'to'        => __( 'Receives briefs and automated notifications, and is the Reply-To address of the emails sent to visitors.', 'dovetail-studio' ),
+		'from_name' => __( 'Display name in outgoing email headers. Defaults to the site title.', 'dovetail-studio' ),
+		/* translators: %s: default sender address, e.g. wordpress@example.com. */
+		'from'      => sprintf( __( 'Address the assistant sends from. Use an address on this site\'s domain so the emails pass SPF and DKIM and do not land in spam; leave blank to use %s. Replies still go to the enquiry email.', 'dovetail-studio' ), dt_va_default_sender() ),
+		'avatar'    => '',
+	);
+	$fields = array();
 
 	foreach ( dt_va_company_fields() as $field => $meta ) {
-		$external = defined( $meta['constant'] );
-
-		if ( 'avatar' === $field ) {
-			echo '<tr><th><label for="dt-va-company-avatar">'
-				. esc_html__( 'Avatar', 'dovetail-studio' )
-				. '</label></th><td><input class="regular-text" id="dt-va-company-avatar" name="avatar" type="text" maxlength="2" value="'
-				. esc_attr( dt_va_company_value( 'avatar' ) ) . '"' . ( $external ? ' readonly' : '' ) . '>';
-			echo '<p class="description">'
-				. ( $external ? esc_html__( 'Defined by', 'dovetail-studio' ) . ' ' . esc_html( $meta['constant'] ) . ' ' . esc_html__( 'in wp-config.php. Edit it there, or remove the definition to use this field.', 'dovetail-studio' ) : esc_html__( 'Up to 2 characters, shown in the tab and panel header. Leave blank to use the default, DT.', 'dovetail-studio' ) )
-				. '</p></td></tr>';
-			echo '<tr><th><label for="dt-va-company-collapse-avatar">'
-				. esc_html__( 'Collapse Avatar', 'dovetail-studio' )
-				. '</label></th><td><label style="display:flex;align-items:center;gap:8px;font-weight:400"><input type="checkbox" id="dt-va-company-collapse-avatar" name="collapse_avatar" value="1"'
-				. checked( dt_va_company_collapse_avatar(), true, false ) . '> '
-				. esc_html__( 'Hide the avatar in the tab shown before the assistant is opened', 'dovetail-studio' )
-				. '</label><p class="description">'
-				. esc_html__( 'The avatar still appears inside the open assistant panel; this only affects the closed tab.', 'dovetail-studio' )
-				. '</p></td></tr>';
-
-			continue;
-		}
-
-		$is_email = in_array( $field, array( 'to', 'from' ), true );
-		echo '<tr><th><label for="dt-va-company-'
-			. esc_attr( $field ) . '">' . esc_html( $meta['label'] )
-			. '</label></th><td><input class="regular-text" id="dt-va-company-' . esc_attr( $field )
-			. '" name="' . esc_attr( $field ) . '" type="' . ( $is_email ? 'email' : 'text' ) . '" value="'
-			. esc_attr( dt_va_company_value( $field ) ) . '"'
-			. ( 'from' === $field ? ' placeholder="' . esc_attr( dt_va_default_sender() ) . '"' : ' required' )
-			. ( $external ? ' readonly' : '' ) . '>';
-		$help = array(
-			'name'      => __( 'Displayed in the assistant and used in enquiry email copy. Defaults to the site title.', 'dovetail-studio' ),
-			'to'        => __( 'Receives briefs and automated notifications, and is the Reply-To address of the emails sent to visitors.', 'dovetail-studio' ),
-			'from_name' => __( 'Display name in outgoing email headers. Defaults to the site title.', 'dovetail-studio' ),
-			/* translators: %s: default sender address, e.g. wordpress@example.com. */
-			'from'      => sprintf( __( 'Address the assistant sends from. Use an address on this site\'s domain so the emails pass SPF and DKIM and do not land in spam; leave blank to use %s. Replies still go to the enquiry email.', 'dovetail-studio' ), dt_va_default_sender() ),
+		$fields[ $field ] = array(
+			'label'    => $meta['label'],
+			'constant' => $meta['constant'],
+			'external' => defined( $meta['constant'] ),
+			'value'    => dt_va_company_value( $field ),
+			'help'     => $help[ $field ],
 		);
-		echo '<p class="description">'
-			. ( $external ? esc_html__( 'Defined by', 'dovetail-studio' ) . ' ' . esc_html( $meta['constant'] ) . ' ' . esc_html__( 'in wp-config.php. Edit it there, or remove the definition to use this field.', 'dovetail-studio' ) : esc_html( $help[ $field ] ) )
-			. '</p></td></tr>';
 	}
 
-	echo '</table><p><button class="button button-primary">'
-		. esc_html__( 'Save company settings', 'dovetail-studio' ) . '</button></p></form>';
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'tab-company',
+		array(
+			'fields'          => $fields,
+			'collapse_avatar' => dt_va_company_collapse_avatar(),
+			'default_sender'  => dt_va_default_sender(),
+		)
+	);
 
 	if ( function_exists( 'dt_va_public_settings' ) ) {
 		dt_va_public_settings();

@@ -8,6 +8,7 @@
 namespace DovetailStudio\LoginGuard;
 
 use DovetailStudio\Core\Http;
+use DovetailStudio\Core\View;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -368,16 +369,18 @@ final class Guard {
 	 * @return void
 	 */
 	private function deny( string $ip, string $title ): void {
-		$text = trim( (string) Settings::get()['block_page_text'] );
-		$body = '' !== $text
-			? wpautop( esc_html( $text ) )
-			: '<p>' . esc_html__( 'Your access has been limited by the site\'s security settings. If you think this is a mistake, contact the site owner.', 'dovetail-studio' ) . '</p>';
-
-		$body = '<h1>' . esc_html( $title ) . '</h1>' . $body
-			/* translators: 1: visitor IP address, 2: date and time. */
-			. '<p><small>' . esc_html( sprintf( __( 'Your IP address: %1$s. Time: %2$s.', 'dovetail-studio' ), $ip, wp_date( 'Y-m-d H:i:s T' ) ) ) . '</small></p>';
+		$body = View::capture(
+			dirname( __DIR__ ),
+			'block-page',
+			array(
+				'title' => $title,
+				'text'  => trim( (string) Settings::get()['block_page_text'] ),
+				'ip'    => $ip,
+				'time'  => wp_date( 'Y-m-d H:i:s T' ),
+			)
+		);
 
 		nocache_headers();
-		wp_die( $body, esc_html( $title ), array( 'response' => 403 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built from escaped parts above.
+		wp_die( $body, esc_html( $title ), array( 'response' => 403 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in views/block-page.php.
 	}
 }

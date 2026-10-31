@@ -108,17 +108,17 @@ function dt_va_json_validate_ajax() {
 	);
 }
 
-function dt_va_json_tools( $format ) {
+/**
+ * Arguments of the JSON tools partial (import, export and sample download) for an editor.
+ *
+ * @param string $format A key of dt_va_json_formats().
+ * @return array{format: string, sample: string}
+ */
+function dt_va_json_tools_args( $format ) {
 	$formats = dt_va_json_formats();
-	$sample  = call_user_func( $formats[ $format ]['sample'] );
-	echo '<span class="dt-va-json-tools" data-format="'
-		. esc_html( $format ) . '" data-sample="'
-		. esc_textarea( wp_json_encode( $sample, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ) . '"> ';
-	echo '<button type="button" class="button" data-json-action="import">'
-		. esc_html__( 'Import', 'dovetail-studio' )
-		. '</button> <button type="button" class="button" data-json-action="export">'
-		. esc_html__( 'Export', 'dovetail-studio' )
-		. '</button> <button type="button" class="button" data-json-action="sample">'
-		. esc_html__( 'Download a Sample', 'dovetail-studio' ) . '</button>';
-	echo '<input type="file" accept=".json,application/json" hidden><span role="status" aria-live="polite" class="dt-va-json-status"></span></span>';
+
+	return array(
+		'format' => $format,
+		'sample' => (string) wp_json_encode( call_user_func( $formats[ $format ]['sample'] ), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ),
+	);
 }

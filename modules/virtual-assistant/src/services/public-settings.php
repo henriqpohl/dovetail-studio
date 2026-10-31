@@ -382,91 +382,39 @@ function dt_va_public_settings() {
 		return;
 	}
 
-	echo '<h2>'
-		. esc_html__( 'Public company details', 'dovetail-studio' ) . '</h2><p>'
-		. esc_html__( 'Edit a value and save to apply it. Optional blank values remain blank. Restore default resets only that field immediately; save other edits first. Google ratings are entered manually; no API key is needed.', 'dovetail-studio' )
-		. '</p>';
-	echo '<p><span class="dt-va-required" aria-hidden="true">*</span> '
-		. esc_html__( 'Required: the assistant stays hidden on the site until these fields are filled in.', 'dovetail-studio' )
-		. '</p>';
-	echo '<style>.dt-va-required{color:#d63638;font-weight:600}.dt-va-missing th,.dt-va-missing td{background:#fcf0f1}.dt-va-missing input{border-color:#d63638}</style><form method="post">';
-	wp_nonce_field( 'dt_va_public' );
-	echo '<input type="hidden" name="dt_va_public" value="1"><table class="form-table">';
+	$rows     = array();
+	$weekdays = array();
 
 	foreach ( dt_va_public_fields() as $key => $type ) {
 		$custom   = array_key_exists( $key, $saved );
-		$v        = $custom ? $saved[ $key ] : $defaults[ $key ];
-		$input_id = 'dt-va-public-' . $key;
+		$value    = $custom ? $saved[ $key ] : $defaults[ $key ];
 		$required = array_key_exists( $key, dt_va_frontend_required_fields() );
-		$missing  = $required && array_key_exists( $key, dt_va_frontend_missing() );
-		echo '<tr id="'
-			. esc_attr( $input_id . '-row' ) . '"' . ( $missing ? ' class="dt-va-missing"' : '' )
-			. '><th><label for="' . esc_attr( $input_id ) . '">' . esc_html( $help[ $key ][0] )
-			. ( $required ? ' <span class="dt-va-required" aria-hidden="true">*</span><span class="screen-reader-text"> ' . esc_html__( '(required)', 'dovetail-studio' ) . '</span>' : '' )
-			. '</label></th><td>';
 
-		if ( 'hours' === $type ) {
-			foreach ( array(
-				'open'  => __( 'Opens', 'dovetail-studio' ),
-				'close' => __( 'Closes', 'dovetail-studio' ),
-			) as $part => $part_label ) {
-				echo '<label>'
-					. esc_html( $part_label ) . ' <input id="'
-					. esc_attr( 'open' === $part ? $input_id : $input_id . '-close' ) . '" aria-describedby="'
-					. esc_attr( $input_id . '-help' )
-					. '" type="number" step="0.25" min="0" max="24" name="public[OPENING_HOURS]['
-					. esc_attr( $part ) . ']" value="' . esc_attr( $v[ $part ] ) . '"></label> ';
-			}
-
-			// 2023-01-01 was a Sunday: weekday names in the admin language.
-			echo '<p>';
-
-			for ( $d = 0; $d < 7; $d++ ) {
-				echo '<label><input type="checkbox" name="public[OPENING_HOURS][days][]" value="'
-					. esc_attr( $d ) . '" ' . checked( in_array( $d, $v['days'], true ), true, false ) . '>'
-					. esc_html(
-						wp_date(
-							'D',
-							strtotime( '2023-01-01 12:00:00 UTC' ) + $d * DAY_IN_SECONDS,
-							new DateTimeZone( 'UTC' )
-						)
-					) . '</label> ';
-			}
-
-			echo '</p>';
-			echo '<p><label for="'
-				. esc_attr( $input_id . '-closed' ) . '">' . esc_html__( 'Closed dates', 'dovetail-studio' )
-				. '</label><br><textarea id="' . esc_attr( $input_id . '-closed' )
-				. '" name="public[OPENING_HOURS][closed]" rows="4" cols="40" placeholder="2026-12-24 to 2026-12-26">'
-				. esc_textarea( dt_va_closed_dates_text( isset( $v['closed'] ) ? $v['closed'] : array() ) )
-				. '</textarea><br><span class="description">'
-				. esc_html__( 'Holidays and other days the office is closed: one date (YYYY-MM-DD) or range (YYYY-MM-DD to YYYY-MM-DD) per line. Past dates are dropped when saving.', 'dovetail-studio' )
-				. '</span></p>';
-		} elseif ( 'company_type' === $type ) {
-			echo '<input id="'
-				. esc_attr( $input_id ) . '" aria-describedby="' . esc_attr( $input_id . '-help' )
-				. '" class="regular-text" type="text" list="dt-va-company-type-list" maxlength="40" name="public['
-				. esc_attr( $key ) . ']" value="' . esc_attr( $v ) . '">';
-			echo '<datalist id="dt-va-company-type-list"><option value="Office"><option value="Studio"><option value="Restaurant"><option value="Store"></datalist>';
-		} else {
-			echo '<input id="'
-				. esc_attr( $input_id ) . '" aria-describedby="' . esc_attr( $input_id . '-help' )
-				. '" class="regular-text" type="text" name="public[' . esc_attr( $key ) . ']" value="'
-				. esc_attr( $v ) . '">';
-		}
-
-		echo ' <button class="button" name="restore_default" value="'
-			. esc_attr( $key ) . '" formnovalidate>' . esc_html__( 'Restore default', 'dovetail-studio' )
-			. '</button>';
-		echo '<p class="description" id="'
-			. esc_attr( $input_id . '-help' ) . '">' . esc_html( $help[ $key ][1] )
-			. '</p><p class="description"><code>' . esc_html( $key ) . '</code> — '
-			. ( $custom ? esc_html__( 'Saved value', 'dovetail-studio' ) : esc_html__( 'Using HTML default', 'dovetail-studio' ) )
-			. '</p></td></tr>';
+		$rows[ $key ] = array(
+			'type'     => $type,
+			'custom'   => $custom,
+			'value'    => $value,
+			'label'    => $help[ $key ][0],
+			'help'     => $help[ $key ][1],
+			'required' => $required,
+			'missing'  => $required && array_key_exists( $key, dt_va_frontend_missing() ),
+			'closed'   => 'hours' === $type ? dt_va_closed_dates_text( isset( $value['closed'] ) ? $value['closed'] : array() ) : '',
+		);
 	}
 
-	echo '</table><button class="button button-primary">'
-		. esc_html__( 'Save public details', 'dovetail-studio' ) . '</button></form>';
+	// 2023-01-01 was a Sunday: weekday names in the admin language.
+	for ( $d = 0; $d < 7; $d++ ) {
+		$weekdays[ $d ] = wp_date( 'D', strtotime( '2023-01-01 12:00:00 UTC' ) + $d * DAY_IN_SECONDS, new DateTimeZone( 'UTC' ) );
+	}
+
+	\DovetailStudio\Core\View::render(
+		DOVETAIL_VIRTUAL_ASSISTANT_PATH,
+		'partials/public-settings',
+		array(
+			'rows'     => $rows,
+			'weekdays' => $weekdays,
+		)
+	);
 }
 
 /**

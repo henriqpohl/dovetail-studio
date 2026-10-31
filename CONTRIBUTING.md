@@ -61,10 +61,17 @@ A forgotten build breaks nothing on a site: `Core\Loader::asset()` serves the re
 - English PHPDoc on every function, method and callback.
 - Security on every entry point: capability checks, nonces for forms and `admin-post` actions, sanitized input, escaped output, prepared SQL. Secrets are stored with `Core\Crypto`; the visitor IP comes from `Core\Http::client_ip()`.
 
+### Templates
+
+- HTML lives only in `views/`: the module's `views/` or `src/Core/views/`, one kebab-case file per screen, tab or partial (`views/partials/…`). Classes and functions check permissions, handle the request and pass the prepared data to the template.
+- Render with `Core\View::render( $module_dir, 'name', $args )` (or `View::capture()` for a string). The template reads only `$args`, documented with `@var array{...} $args`, and escapes all output.
+- Short fragments built for another API (a `wp_die()` message, a JSON-LD script, a mail body) may stay in PHP.
+
 ### Front end
 
 - Plain JavaScript files in the module's `assets/js/` with English JSDoc; no TypeScript (there is no build) and no JavaScript inline in PHP. Load scripts with `wp_enqueue_script()` and `Core\Loader::asset()`, only on the screens that need them, and add them to `$files` in `tools/build.php`.
-- Admin screens use the shared design system in `assets/admin/dovetail-admin.css`; add module CSS only for what the shared classes cannot express.
+- Admin screens use the shared design system in `assets/admin/dovetail-admin.css`; add module CSS only for what the shared classes cannot express. No `style` attributes or `<style>` tags in templates, and colours, shadows and font sizes only from its `--dovetail-*` tokens (add a new one there first). Font sizes are `rem` tokens; titles use the fluid `clamp()` tokens.
+- For a confirmation before a link or button runs, add `data-dovetail-confirm="Message"`; `assets/admin/dovetail-admin.js` handles it on every Studio screen. Pass data to a script through `data-*` attributes, `wp_add_inline_script()` or `wp_localize_script()`, never a `<script>` in a template.
 - Accessible markup: labels for every field, keyboard access, text alternatives for images and charts.
 
 ### Texts and data
